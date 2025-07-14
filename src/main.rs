@@ -18,9 +18,6 @@ enum TileKind {
     },
 }
 
-// A struct to represent a single tile in our grid.
-// `#[derive(...)]` gives our struct some default behaviors.
-// `Copy` and `Clone` allow us to easily duplicate tiles.
 #[derive(Clone, Copy, Debug)]
 struct Tile {
     kind: TileKind,
@@ -53,8 +50,6 @@ trait Consumable {
     fn consume(&mut self) -> i32;
 }
 
-// This struct will hold all our game's data.
-// For now, it's empty.
 struct GameState {
     grid: Vec<Vec<Tile>>,
     creatures: Vec<Creature>,
@@ -72,7 +67,6 @@ impl Consumable for Tile {
     }
 }
 
-// This is our constructor. It's a convention to name it `new`.
 impl GameState {
     fn new() -> GameResult<Self> {
         let mut rng = rand::rng();
@@ -94,34 +88,30 @@ impl GameState {
     fn tick(&mut self) {
         let mut rng = rand::rng();
 
-        // We use `retain_mut` to iterate and modify our creatures.
-        // It allows us to safely remove creatures from the vector while iterating.
         self.creatures.retain_mut(|creature| {
             // --- Base Calorie Drain ---
             // It costs energy just to exist.
             let mut cost = 1;
 
             // --- Action Logic ---
-            // Use a `match` statement to perform logic based on the creature's current action.
             match creature.action {
                 Action::Idle => {
                     // When Idle, the creature first checks its surroundings.
                     let current_tile = &mut self.grid[creature.position.y as usize][creature.position.x as usize];
                     
-                    // `if let` is a handy way to check if an enum is a specific variant.
                     // Here, we check if the tile's kind is CerealGrass.
                     if let TileKind::CerealGrass { .. } = current_tile.kind {
                         // If it's on a grass tile, it starts gathering.
                         creature.action = Action::Gathering { progress: 0, max_progress: 3 }; // Takes 3 ticks
                     } else {
                         // If the tile is empty, the creature moves.
-                        let direction = rng.gen_range(0..4); // 0: Up, 1: Down, 2: Left, 3: Right
+                        let direction = rng.random_range(0..4);
                         let mut new_pos = creature.position;
                         match direction {
-                            0 => new_pos.y -= 1,
-                            1 => new_pos.y += 1,
-                            2 => new_pos.x -= 1,
-                            _ => new_pos.x += 1,
+                            0 => new_pos.y -= 1, // Up
+                            1 => new_pos.y += 1, // Down
+                            2 => new_pos.x -= 1, // Left
+                            _ => new_pos.x += 1, // Right
                         }
 
                         // Boundary checks
@@ -167,13 +157,10 @@ impl GameState {
     }
 }
 
-// This is where we implement the logic for our game.
 // ggez will call these methods in a loop.
 impl EventHandler for GameState {
     // The `update` method is called on every frame before drawing.
-    // It's where you'll put your game logic, like moving characters.
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        // We don't have any logic yet, so we just return Ok.
         Ok(())
     }
 
@@ -194,34 +181,30 @@ impl EventHandler for GameState {
 
         // 2. Drawing logic
         // Iterate over the grid with both index and value.
-        // `enumerate()` gives us the index (y) of each row.
         for (y, row) in self.grid.iter().enumerate() {
-            // `iter()` lets us look at the items in the row without taking ownership.
             for (x, tile) in row.iter().enumerate() {
-                // Determine the color of the square. We'll make a checkerboard.
                 let color = match tile.kind {
                     TileKind::Empty => {
+                        // Checkerboard pattern
                         if (x + y) % 2 == 0 {
                             Color::from([0.4, 0.4, 0.4, 1.0]) // Dark grey
                         } else {
                             Color::from([0.5, 0.5, 0.5, 1.0]) // Light grey
                         }
                     }
-                    // CerealGrass tiles are now green!
                     TileKind::CerealGrass { .. } => Color::from([0.2, 0.8, 0.2, 1.0]),
                 };
 
                 // Create a rectangle mesh for the tile.
                 let rect = graphics::Rect::new(
-                    x as f32 * TILE_SIZE, // The `as f32` is a type cast
+                    x as f32 * TILE_SIZE,
                     y as f32 * TILE_SIZE,
                     TILE_SIZE,
                     TILE_SIZE,
                 );
 
-                // Draw the rectangle to the canvas.
                 canvas.draw(
-                    &graphics::Quad, // We are drawing a simple rectangle
+                    &graphics::Quad,
                     graphics::DrawParam::new()
                         .dest(rect.point())
                         .scale(rect.size())
