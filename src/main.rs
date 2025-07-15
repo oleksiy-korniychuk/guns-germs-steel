@@ -9,6 +9,9 @@ const GRID_WIDTH: usize = 40;
 const GRID_HEIGHT: usize = 30;
 const TILE_SIZE: f32 = 20.0;
 const STARTING_GRASS_COUNT: i32 = 80;
+const MOVE_COST: i32 = 1;
+const LIVE_COST: i32 = 1;
+const WORK_COST: i32 = 1;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum TileKind {
@@ -30,20 +33,22 @@ struct Position {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum Action {
-    Idle,
-    Gathering {
-        progress: u32,
-        max_progress: u32,
-    }
+enum State {
+    Wandering,
+    SeekingFood,
+    Eating { 
+        progress: u32, 
+        max_progress: u32 
+    },
 }
 
 #[derive(Debug)]
 struct Creature {
     pub position: Position,
+    pub state: State,
+    pub target: Option<Position>,
     pub calories: i32,
     pub calories_max: i32,
-    pub action: Action,
 }
 
 trait Consumable {
@@ -53,6 +58,7 @@ trait Consumable {
 struct GameState {
     grid: Vec<Vec<Tile>>,
     creatures: Vec<Creature>,
+    tick_count: u32,
 }
 
 impl Consumable for Tile {
@@ -82,78 +88,146 @@ impl GameState {
 
         let creatures = Vec::new();
 
-        Ok(GameState { grid, creatures })
+        Ok(GameState { grid, creatures, tick_count: 0 })
     }
 
     fn tick(&mut self) {
+        let mut i = 0;
+        while i < self.creatures.len() {
+            // Update the creature's state and behavior
+            let creature_state = self.creatures[i].state;
+            match creature_state {
+                State::Wandering => self.handle_wandering_at_index(i),
+                State::SeekingFood => self.handle_seeking_food_at_index(i),
+                State::Eating { .. } => self.handle_eating_at_index(i),
+            }
+            
+            // Base calorie drain
+            self.creatures[i].calories -= LIVE_COST;
+            
+            // Remove if dead
+            if self.creatures[i].calories <= 0 {
+                self.creatures.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+
+        self.tick_count += 1;
+    }
+
+    // --- Helper Functions ---
+
+    fn handle_wandering_at_index(&mut self, index: usize) {
+        // If the creature gets hungry, it starts seeking food.
+        if self.creatures[index].calories < (self.creatures[index].calories_max as f32 / 2.0) as i32 {
+            if let Some(food_pos) = self.find_closest_food(self.creatures[index].position) {
+                self.creatures[index].state = State::SeekingFood;
+                self.creatures[index].target = Some(food_pos);
+                return; // State changed, so we are done for this tick.
+            }
+        }
+
+        // Otherwise, move randomly
         let mut rng = rand::rng();
+        let mut new_pos = self.creatures[index].position;
+        match rng.random_range(0..5) {
+            0 => new_pos.y = (new_pos.y - 1).max(0), // Up
+            1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1), // Down
+            2 => new_pos.x = (new_pos.x - 1).max(0), // Left
+            3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1), // Right
+            _ => new_pos.x = new_pos.x, // Stay in place
+        }
+        self.creatures[index].position = new_pos;
+        self.creatures[index].calories -= MOVE_COST; // Moving costs extra
+    }
 
-        self.creatures.retain_mut(|creature| {
-            // --- Base Calorie Drain ---
-            // It costs energy just to exist.
-            let mut cost = 1;
+    fn find_closest_food(&self, position: Position) -> Option<Position> {
+        let mut closest_food: Option<(Position, i32)> = None;
 
-            // --- Action Logic ---
-            match creature.action {
-                Action::Idle => {
-                    // When Idle, the creature first checks its surroundings.
-                    let current_tile = &mut self.grid[creature.position.y as usize][creature.position.x as usize];
-                    
-                    // Here, we check if the tile's kind is CerealGrass.
-                    if let TileKind::CerealGrass { .. } = current_tile.kind {
-                        // If it's on a grass tile, it starts gathering.
-                        creature.action = Action::Gathering { progress: 0, max_progress: 3 }; // Takes 3 ticks
+        for (y, row) in self.grid.iter().enumerate() {
+            for (x, tile) in row.iter().enumerate() {
+                if let TileKind::CerealGrass { .. } = tile.kind {
+                    let food_pos = Position { x: x as i32, y: y as i32 };
+                    let dist = (position.x - food_pos.x).abs() + (position.y - food_pos.y).abs(); // Manhattan distance
+
+                    if let Some((_, min_dist)) = closest_food {
+                        if dist < min_dist {
+                            closest_food = Some((food_pos, dist));
+                        }
                     } else {
-                        // If the tile is empty, the creature moves.
-                        let direction = rng.random_range(0..4);
-                        let mut new_pos = creature.position;
-                        match direction {
-                            0 => new_pos.y -= 1, // Up
-                            1 => new_pos.y += 1, // Down
-                            2 => new_pos.x -= 1, // Left
-                            _ => new_pos.x += 1, // Right
-                        }
-
-                        // Boundary checks
-                        if new_pos.x >= 0 && new_pos.x < GRID_WIDTH as i32 &&
-                           new_pos.y >= 0 && new_pos.y < GRID_HEIGHT as i32 {
-                            creature.position = new_pos;
-                            cost += 1; // Moving costs extra.
-                        }
-                    }
-                }
-                Action::Gathering { ref mut progress, max_progress } => {
-                    // If gathering, increment progress.
-                    *progress += 1;
-                    cost += 1; // Gathering is hard work and costs energy.
-
-                    if *progress >= max_progress {
-                        // Finished gathering. Consume the resource.
-                        let current_tile = &mut self.grid[creature.position.y as usize][creature.position.x as usize];
-                        
-                        // We call the `consume` method from our `Consumable` trait!
-                        let calories_gained = current_tile.consume();
-                        creature.calories += calories_gained;
-
-                        // Clamp calories to the maximum.
-                        if creature.calories > creature.calories_max {
-                            creature.calories = creature.calories_max;
-                        }
-                        
-                        // After eating, the creature is Idle again.
-                        creature.action = Action::Idle;
+                        closest_food = Some((food_pos, dist));
                     }
                 }
             }
+        }
+        closest_food.map(|(pos, _)| pos)
+    }
 
-            // --- Apply Costs & Check for Survival ---
-            creature.calories -= cost;
+    fn handle_seeking_food_at_index(&mut self, index: usize) {
+        let target_pos = match self.creatures[index].target {
+            Some(pos) => pos,
+            None => { // Should not happen, but as a fallback, go back to wandering.
+                self.creatures[index].state = State::Wandering;
+                return;
+            }
+        };
+    
+        // Have we arrived?
+        if self.creatures[index].position.x == target_pos.x && self.creatures[index].position.y == target_pos.y {
+            // Check if the food is still there
+            let tile = &self.grid[target_pos.y as usize][target_pos.x as usize];
+            if let TileKind::CerealGrass { .. } = tile.kind {
+                self.creatures[index].state = State::Eating { progress: 0, max_progress: 3 };
+            } else {
+                // The food was eaten by someone else! Go back to wandering.
+                self.creatures[index].state = State::Wandering;
+                self.creatures[index].target = None;
+            }
+            return;
+        }
+    
+        // Move towards the target (simple pathfinding)
+        let mut new_pos = self.creatures[index].position;
+        let dx = target_pos.x - self.creatures[index].position.x;
+        let dy = target_pos.y - self.creatures[index].position.y;
+    
+        if dx.abs() > dy.abs() {
+            new_pos.x += dx.signum();
+        } else {
+            new_pos.y += dy.signum();
+        }
+        
+        // Boundary checks
+        if new_pos.x >= 0 && new_pos.x < GRID_WIDTH as i32 &&
+           new_pos.y >= 0 && new_pos.y < GRID_HEIGHT as i32 {
+            self.creatures[index].position = new_pos;
+            self.creatures[index].calories -= MOVE_COST; // Moving costs extra
+        }
+    }
 
-            // --- Survival Check ---
-            // The closure returns `true` to keep the creature, `false` to remove it.
-            creature.calories > 0
-        });
+    fn handle_eating_at_index(&mut self, index: usize) {
+        let (progress, max_progress) = if let State::Eating { progress, max_progress } = self.creatures[index].state {
+            (progress, max_progress)
+        } else {
+            return;
+        };
 
+        let new_progress = progress + 1;
+        self.creatures[index].calories -= WORK_COST; // Gathering is hard work
+
+        if new_progress >= max_progress {
+            let position = self.creatures[index].position;
+            let current_tile = &mut self.grid[position.y as usize][position.x as usize];
+            let calories_gained = current_tile.consume();
+            self.creatures[index].calories += calories_gained;
+            
+            // After eating, go back to wandering
+            self.creatures[index].state = State::Wandering;
+            self.creatures[index].target = None;
+        } else {
+            self.creatures[index].state = State::Eating { progress: new_progress, max_progress };
+        }
     }
 }
 
@@ -242,7 +316,14 @@ impl EventHandler for GameState {
             );
         }
 
-        // 4. Present the canvas to the screen.
+        // 4. Draw the tick count
+        let text = graphics::Text::new(format!("Tick: {}", self.tick_count));
+        canvas.draw(
+            &text,
+            Point2 { x: 10.0, y: 10.0 },
+        );
+
+        // 5. Present the canvas to the screen.
         canvas.finish(ctx)?;
         Ok(())
     }
@@ -263,14 +344,16 @@ pub fn main() -> GameResult {
         position: Position { x: 10, y: 10 },
         calories: 100,
         calories_max: 100,
-        action: Action::Idle,
+        state: State::Wandering,
+        target: None,
     });
 
     state.creatures.push(Creature {
         position: Position { x: 15, y: 12 },
         calories: 60,
         calories_max: 100,
-        action: Action::Idle,
+        state: State::Wandering,
+        target: None,
     });
 
     // 3. Start the game loop.
