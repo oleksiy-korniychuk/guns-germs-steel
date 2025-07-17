@@ -152,7 +152,7 @@ pub fn tick_counter_system(mut tick_count: ResMut<TickCount>) {
 }
 
 // --- Helper Functions ---
-pub fn find_closest_food(grid: &Res<GameGrid>, position: &Position) -> Option<Position> {
+fn find_closest_food(grid: &Res<GameGrid>, position: &Position) -> Option<Position> {
     let mut closest_food: Option<(Position, i32)> = None;
 
     for (y, row) in grid.tiles.iter().enumerate() {
