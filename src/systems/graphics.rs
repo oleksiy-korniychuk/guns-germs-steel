@@ -76,19 +76,20 @@ pub fn update_tick_text_system(
 pub fn update_tile_visuals_system(
     grid: Res<GameGrid>,
     mut query: Query<(&mut Sprite, &Position), With<TileSprite>>,
+    asset_server: Res<AssetServer>,
 ) {
     if grid.is_changed() {
         for (mut sprite, pos) in query.iter_mut() {
             let tile = &grid.tiles[pos.y as usize][pos.x as usize];
-            sprite.color = match tile.kind {
+            (sprite.color, sprite.image) = match tile.kind {
                 TileKind::Empty => {
                     if (pos.x + pos.y) % 2 == 0 {
-                        Color::srgb(0.4, 0.4, 0.4)
+                        (Color::srgb(0.4, 0.4, 0.4), default())
                     } else {
-                        Color::srgb(0.5, 0.5, 0.5)
+                        (Color::srgb(0.5, 0.5, 0.5), default())
                     }
                 }
-                TileKind::CerealGrass { .. } => Color::srgb(0.2, 0.8, 0.2),
+                TileKind::CerealGrass { .. } => (Color::srgb(0.2, 0.8, 0.2), asset_server.load("sprites/wheat.png")),
             };
         }
     }

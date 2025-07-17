@@ -41,20 +41,24 @@ pub fn setup_system(mut commands: Commands) {
     ));
 }
 
-pub fn setup_visualization_system(mut commands: Commands, grid: Res<GameGrid>) {
+pub fn setup_visualization_system(
+    mut commands: Commands,
+    grid: Res<GameGrid>,
+    asset_server: Res<AssetServer>
+) {
     // --- Draw the Grid ---
     // We spawn a sprite for each tile only once
     for (y, row) in grid.tiles.iter().enumerate() {
         for (x, tile) in row.iter().enumerate() {
-            let color = match tile.kind {
+            let (color, image) = match tile.kind {
                 TileKind::Empty => {
                     if (x + y) % 2 == 0 {
-                        Color::srgb(0.4, 0.4, 0.4)
+                        (Color::srgb(0.4, 0.4, 0.4), default())
                     } else {
-                        Color::srgb(0.5, 0.5, 0.5)
+                        (Color::srgb(0.5, 0.5, 0.5), default())
                     }
                 }
-                TileKind::CerealGrass { .. } => Color::srgb(0.2, 0.8, 0.2),
+                TileKind::CerealGrass { .. } => (Color::srgb(0.2, 0.8, 0.2), asset_server.load("sprites/wheat.png")),
             };
 
             commands.spawn((
@@ -62,6 +66,7 @@ pub fn setup_visualization_system(mut commands: Commands, grid: Res<GameGrid>) {
                 Sprite {
                     color,
                     custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
+                    image,
                     ..default()
                 },
                 Transform::from_xyz(
