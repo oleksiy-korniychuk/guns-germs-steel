@@ -42,7 +42,7 @@ fn main() {
             (
                 fsm_decision_system,
                 wandering_system,
-                seeking_food_system,
+                traveling_system,
                 eating_system,
                 movement_system,
                 calorie_burn_system,
@@ -53,15 +53,17 @@ fn main() {
         .add_systems(
             Update, 
             (
+                spatial_grid_system,
                 toggle_pause_system,
                 exit_on_escape_system,
                 spawn_creature_visuals_system,
+                spawn_plant_visuals_system,
                 update_creature_color_system,
                 update_creature_position_system,
                 update_tick_text_system,
                 update_tile_visuals_system,
             ).chain(),
         )
-        .insert_resource(Time::<Fixed>::from_hz(1.0))
+        .insert_resource(Time::<Fixed>::from_hz(TICK_RATE_HZ))
         .run();
 }

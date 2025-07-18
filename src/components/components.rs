@@ -16,13 +16,11 @@ pub struct Calories {
 pub enum FsmState {
     Wandering,
     Traveling,
-    Eating (EatingProgress)
-}
-
-#[derive(Debug, PartialEq)]
-pub struct EatingProgress {
-    pub progress: u32,
-    pub max_progress: u32,
+    Eating {
+        progress: u32,
+        max_progress: u32,
+        entity: Option<Entity>,
+    },
 }
 
 #[derive(Component, Debug)]
@@ -36,7 +34,7 @@ pub enum Goal {
 }
 
 #[derive(Component, Debug)]
-pub struct Target(pub Option<Position>);
+pub struct Target(pub Option<Entity>);
 
 #[derive(Component)]
 pub struct MoveTo {

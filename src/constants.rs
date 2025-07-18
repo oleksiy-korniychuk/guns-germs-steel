@@ -5,3 +5,4 @@ pub const STARTING_GRASS_COUNT: i32 = 80;
 pub const MOVE_COST: i32 = 1;
 pub const LIVE_COST: i32 = 1;
 pub const WORK_COST: i32 = 1;
+pub const TICK_RATE_HZ: f64 = 2.0;

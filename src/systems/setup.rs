@@ -5,6 +5,7 @@ use crate::resources::game_grid::{
     GameGrid,
     TileKind,
     Tile,
+    SpatialGrid,
 };
 use crate::components::components::*;
 use crate::resources::tick_count::TickCount;
@@ -14,9 +15,10 @@ pub fn setup_system(mut commands: Commands) {
 
     // --- Resource Setup ---
     let mut rng = rand::rng();
-    let mut grid_tiles = vec![vec![Tile { kind: TileKind::Empty }; GRID_WIDTH]; GRID_HEIGHT];
+    let grid_tiles = vec![vec![Tile { kind: TileKind::Empty }; GRID_WIDTH]; GRID_HEIGHT];
 
     commands.insert_resource(GameGrid { tiles: grid_tiles });
+    commands.insert_resource(SpatialGrid::default());
     commands.insert_resource(TickCount::default());
 
     // --- Spawning Initial Entities ---
@@ -26,6 +28,7 @@ pub fn setup_system(mut commands: Commands) {
         Position { x: 10, y: 10 },
         Calories { current: 100, max: 100 },
         FsmState::Wandering,
+        Goals { list: vec![] },
         Target(None),
     ));
     commands.spawn((
@@ -33,6 +36,7 @@ pub fn setup_system(mut commands: Commands) {
         Position { x: 15, y: 12 },
         Calories { current: 60, max: 100 },
         FsmState::Wandering,
+        Goals { list: vec![] },
         Target(None),
     ));
     // Plants

@@ -9,7 +9,6 @@ use crate::resources::{
 use crate::components::components::*;
 use crate::constants::*;
 
-// System to add sprites to newly created creatures
 pub fn spawn_creature_visuals_system(
     mut commands: Commands,
     query: Query<(Entity, &Position), (With<CreatureMarker>, Added<Position>)>,
@@ -21,6 +20,30 @@ pub fn spawn_creature_visuals_system(
                 color: Color::srgb(1.0, 1.0, 0.0), // Default color
                 custom_size: Some(Vec2::new(TILE_SIZE * 0.9, TILE_SIZE * 0.9)),
                 image: asset_server.load("sprites/human.png"),
+                ..default()
+            }
+        );
+        commands.entity(entity).insert(
+            Transform::from_xyz(
+                pos.x as f32 * TILE_SIZE - (GRID_WIDTH as f32 * TILE_SIZE) / 2.0 + TILE_SIZE / 2.0,
+                pos.y as f32 * TILE_SIZE - (GRID_HEIGHT as f32 * TILE_SIZE) / 2.0 + TILE_SIZE / 2.0,
+                2.0, // Higher Z-index to be on top of tiles
+            )
+        );
+    }
+}
+
+pub fn spawn_plant_visuals_system(
+    mut commands: Commands,
+    query: Query<(Entity, &Position), (With<PlantMarker>, Added<Position>)>,
+    asset_server: Res<AssetServer>,
+) {
+    for (entity, pos) in query.iter() {
+        commands.entity(entity).insert(
+            Sprite {
+                color: Color::srgb(0.0, 1.0, 0.0), // Default color
+                custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
+                image: asset_server.load("sprites/wheat.png"),
                 ..default()
             }
         );
