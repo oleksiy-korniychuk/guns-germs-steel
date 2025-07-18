@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use std::collections::HashMap;
+use crate::components::components::Position;
 
 #[derive(Resource)]
 pub struct GameGrid {
@@ -7,10 +9,7 @@ pub struct GameGrid {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TileKind {
-    Empty,
-    CerealGrass {
-        calories: i32,
-    },
+    Empty
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -18,18 +17,5 @@ pub struct Tile {
     pub kind: TileKind,
 }
 
-pub trait Consumable {
-    fn consume(&mut self) -> i32;
-}
-
-impl Consumable for Tile {
-    fn consume(&mut self) -> i32 {
-        match self.kind {
-            TileKind::CerealGrass { calories} => {
-                self.kind = TileKind::Empty;
-                calories
-            },
-            TileKind::Empty => 0,
-        }
-    }
-}
+#[derive(Resource, Default)]
+pub struct SpatialGrid(pub HashMap<Position, Vec<Entity>>);

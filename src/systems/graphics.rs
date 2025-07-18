@@ -12,7 +12,7 @@ use crate::constants::*;
 // System to add sprites to newly created creatures
 pub fn spawn_creature_visuals_system(
     mut commands: Commands,
-    query: Query<(Entity, &Position), (With<CreatureTag>, Added<Position>)>,
+    query: Query<(Entity, &Position), (With<CreatureMarker>, Added<Position>)>,
     asset_server: Res<AssetServer>,
 ) {
     for (entity, pos) in query.iter() {
@@ -36,7 +36,7 @@ pub fn spawn_creature_visuals_system(
 
 // System to update the visual position of creatures when their grid Position changes
 pub fn update_creature_position_system(
-    mut query: Query<(&mut Transform, &Position), With<CreatureTag>>,
+    mut query: Query<(&mut Transform, &Position), With<CreatureMarker>>,
 ) {
     for (mut transform, pos) in query.iter_mut() {
         transform.translation.x = pos.x as f32 * TILE_SIZE - (GRID_WIDTH as f32 * TILE_SIZE) / 2.0 + TILE_SIZE / 2.0;
@@ -45,7 +45,7 @@ pub fn update_creature_position_system(
 }
 
 // System to update creature color based on health
-pub fn update_creature_color_system(mut query: Query<(&mut Sprite, &Calories), With<CreatureTag>>) {
+pub fn update_creature_color_system(mut query: Query<(&mut Sprite, &Calories), With<CreatureMarker>>) {
     for (mut sprite, cals) in query.iter_mut() {
         sprite.color = if cals.current >= cals.max {
             Color::srgb(0.0, 1.0, 0.0)
@@ -75,8 +75,7 @@ pub fn update_tick_text_system(
 // System to update tile colors when they change (e.g., grass is eaten)
 pub fn update_tile_visuals_system(
     grid: Res<GameGrid>,
-    mut query: Query<(&mut Sprite, &Position), With<TileSprite>>,
-    asset_server: Res<AssetServer>,
+    mut query: Query<(&mut Sprite, &Position), With<TileMarker>>,
 ) {
     if grid.is_changed() {
         for (mut sprite, pos) in query.iter_mut() {
@@ -89,7 +88,6 @@ pub fn update_tile_visuals_system(
                         (Color::srgb(0.5, 0.5, 0.5), default())
                     }
                 }
-                TileKind::CerealGrass { .. } => (Color::srgb(0.2, 0.8, 0.2), asset_server.load("sprites/wheat.png")),
             };
         }
     }

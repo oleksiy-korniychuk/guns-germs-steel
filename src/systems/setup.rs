@@ -15,36 +15,43 @@ pub fn setup_system(mut commands: Commands) {
     // --- Resource Setup ---
     let mut rng = rand::rng();
     let mut grid_tiles = vec![vec![Tile { kind: TileKind::Empty }; GRID_WIDTH]; GRID_HEIGHT];
-    for _ in 0..STARTING_GRASS_COUNT {
-        let x = rng.random_range(0..GRID_WIDTH);
-        let y = rng.random_range(0..GRID_HEIGHT);
-        grid_tiles[y][x].kind = TileKind::CerealGrass { calories: 20 };
-    }
 
     commands.insert_resource(GameGrid { tiles: grid_tiles });
     commands.insert_resource(TickCount::default());
 
     // --- Spawning Initial Entities ---
+    // Creatures
     commands.spawn((
-        CreatureTag,
+        CreatureMarker,
         Position { x: 10, y: 10 },
         Calories { current: 100, max: 100 },
         FsmState::Wandering,
         Target(None),
     ));
     commands.spawn((
-        CreatureTag,
+        CreatureMarker,
         Position { x: 15, y: 12 },
         Calories { current: 60, max: 100 },
         FsmState::Wandering,
         Target(None),
     ));
+    // Plants
+    for _ in 0..STARTING_GRASS_COUNT {
+        let x = rng.random_range(0..GRID_WIDTH);
+        let y = rng.random_range(0..GRID_HEIGHT);
+        commands.spawn((
+            PlantMarker,
+            Position { x: x as i32, y: y as i32 },
+            Calories { current: 20, max: 20 },
+            Harvestable,
+            Edible,
+        ));
+    }
 }
 
 pub fn setup_visualization_system(
     mut commands: Commands,
     grid: Res<GameGrid>,
-    asset_server: Res<AssetServer>
 ) {
     // --- Draw the Grid ---
     // We spawn a sprite for each tile only once
@@ -58,11 +65,10 @@ pub fn setup_visualization_system(
                         (Color::srgb(0.5, 0.5, 0.5), default())
                     }
                 }
-                TileKind::CerealGrass { .. } => (Color::srgb(0.2, 0.8, 0.2), asset_server.load("sprites/wheat.png")),
             };
 
             commands.spawn((
-                TileSprite,
+                TileMarker,
                 Sprite {
                     color,
                     custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
