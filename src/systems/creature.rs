@@ -120,23 +120,28 @@ pub fn find_food_system(
 
 pub fn idle_goal_selection_system(
     mut commands: Commands,
-    creature_query: Query<(Entity, &Position), (With<CreatureMarker>, With<WantsToIdle>)>,
+    creature_query: Query<(Entity, &Position, &Calories), (With<CreatureMarker>, With<WantsToIdle>)>,
 ) {
     let mut rng = rand::rng();
-    for (entity, pos) in creature_query.iter() {
-        let mut new_pos = *pos;
-        match rng.random_range(0..5) {
-            0 => new_pos.y = (new_pos.y - 1).max(0),
-            1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
-            2 => new_pos.x = (new_pos.x - 1).max(0),
-            3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
-            _ => {} // Stay put
+    for (entity, pos, calories) in creature_query.iter() {
+        if calories.current < calories.max {
+            commands.entity(entity).remove::<WantsToIdle>();
+            commands.entity(entity).insert(WantsToEat);
         }
-        
-        // Remove the intent and add action
-        commands.entity(entity)
-            .remove::<WantsToIdle>()
-            .insert(ActionTravelTo { destination: new_pos });
+        else {
+            let mut new_pos = *pos;
+            match rng.random_range(0..5) {
+                0 => new_pos.y = (new_pos.y - 1).max(0),
+                1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
+                2 => new_pos.x = (new_pos.x - 1).max(0),
+                3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
+                _ => {} // Stay put
+            }
+            
+            commands.entity(entity)
+                .remove::<WantsToIdle>()
+                .insert(ActionTravelTo { destination: new_pos });
+        }
     }
 }
 
@@ -170,6 +175,7 @@ pub fn pathfinding_system(
 }
 
 // --- Helper Functions ---
+
 // Optimized search function using a spatial grid.
 fn find_closest_food_entity(
     grid: &Res<SpatialGrid>,
