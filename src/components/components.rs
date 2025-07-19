@@ -50,7 +50,9 @@ pub struct ActivePath {
 pub struct CreatureMarker;
 
 #[derive(Component)]
-pub struct PlantMarker;
+pub struct PlantMarker {
+    pub plant_type: PlantType,
+}
 
 #[derive(Component)]
 pub struct TileMarker;
@@ -63,3 +65,9 @@ pub struct Harvestable;
 
 #[derive(Component)]
 pub struct TickText;
+
+// --- Enums ---
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum PlantType {
+    Wheat
+}

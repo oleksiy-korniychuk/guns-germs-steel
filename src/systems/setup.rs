@@ -22,7 +22,7 @@ pub fn setup_system(mut commands: Commands) {
     commands.insert_resource(TickCount::default());
 
     // --- Spawning Initial Entities ---
-    // Creatures
+    // Spawn Creatures
     commands.spawn((
         CreatureMarker,
         Position { x: 10, y: 10 },
@@ -33,12 +33,12 @@ pub fn setup_system(mut commands: Commands) {
         Position { x: 15, y: 12 },
         Calories { current: 60, max: 100 },
     ));
-    // Plants
+    // Spawn Plants
     for _ in 0..STARTING_GRASS_COUNT {
         let x = rng.random_range(0..GRID_WIDTH);
         let y = rng.random_range(0..GRID_HEIGHT);
         commands.spawn((
-            PlantMarker,
+            PlantMarker { plant_type: PlantType::Wheat },
             Position { x: x as i32, y: y as i32 },
             FoodSource { nutrition_value: 20 },
             Harvestable,

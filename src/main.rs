@@ -42,6 +42,7 @@ fn main() {
             FixedUpdate, // System run every tick
             (
                 spatial_grid_system,
+                // Intent-Driven Systems
                 goal_selection_system,      // Brain: assigns intents (WantsTo*)
                 idle_goal_selection_system,   // Convert WantsToIdle to actions
                 find_food_system,          // Convert WantsToEat to actions  
@@ -51,6 +52,7 @@ fn main() {
                 // Core systems
                 calorie_burn_system,
                 death_system,
+                plant_propogation_system,
                 tick_counter_system,
             ).chain().run_if(in_state(GameState::Running)),
         )
