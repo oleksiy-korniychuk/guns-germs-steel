@@ -8,18 +8,27 @@ use crate::resources::{
 };
 use crate::components::components::*;
 use crate::constants::*;
+use rand::Rng;
 
 pub fn spawn_creature_visuals_system(
     mut commands: Commands,
     query: Query<(Entity, &Position), (With<CreatureMarker>, Added<Position>)>,
     asset_server: Res<AssetServer>,
 ) {
+    let mut rng = rand::rng();
+    
     for (entity, pos) in query.iter() {
+        let headband_color = Color::srgb(
+            rng.random_range(0.0..1.0),
+            rng.random_range(0.0..1.0), 
+            rng.random_range(0.0..1.0)
+        );
+        
         commands.entity(entity).insert(
             Sprite {
                 color: Color::srgb(1.0, 1.0, 0.0), // Default color
-                custom_size: Some(Vec2::new(TILE_SIZE * 0.9, TILE_SIZE * 0.9)),
-                image: asset_server.load("sprites/human.png"),
+                custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
+                image: asset_server.load("sprites/human_v2.png"),
                 ..default()
             }
         );
@@ -30,6 +39,20 @@ pub fn spawn_creature_visuals_system(
                 2.0, // Higher Z-index to be on top of tiles
             )
         );
+
+        // Create a child entity for the headband
+        let headband_entity = commands.spawn((
+            Sprite {
+                color: headband_color, // This color stays the same
+                custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
+                image: asset_server.load("sprites/human_headband_v2.png"),
+                ..default()
+            },
+            Transform::from_xyz(0.0, 0.0, 0.1), // Relative to parent, slightly higher Z
+        )).id();
+
+        // Make the headband a child of the creature
+        commands.entity(entity).add_child(headband_entity);
     }
 }
 

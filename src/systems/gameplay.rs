@@ -97,13 +97,9 @@ pub fn eating_system(
         if let FsmState::Eating { progress, max_progress, entity } = *fsm {
             let new_progress = progress + 1;
             calories.current -= WORK_COST;
-            println!("Eating: {:?}", calories.current);
-            println!("Progress: {:?}", new_progress);
 
             if new_progress >= max_progress {
-                println!("Eating plant: {:?}", entity);
                 if let Ok((plant_entity, plant_calories)) = plant_query.get(entity.unwrap()) {
-                    println!("Eating plant: {:?}", plant_entity);
                     calories.current += plant_calories.current;
                     commands.entity(plant_entity).despawn();
                 }
