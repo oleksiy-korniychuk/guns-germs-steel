@@ -13,6 +13,7 @@ use systems::{
     setup::*,
     graphics::*,
     gameplay::*,
+    creature::*,
 };
 use constants::*;
 
@@ -38,22 +39,24 @@ fn main() {
             ).chain(),
         )
         .add_systems(
-            FixedUpdate,
+            FixedUpdate, // System run every tick
             (
-                fsm_decision_system,
-                wandering_system,
-                traveling_system,
-                eating_system,
-                movement_system,
+                spatial_grid_system,
+                goal_selection_system,      // Brain: assigns intents (WantsTo*)
+                idle_goal_selection_system,   // Convert WantsToIdle to actions
+                find_food_system,          // Convert WantsToEat to actions  
+                pathfinding_system,        // Convert ActionTravelTo to ActivePath
+                perform_movement_system,    // Execute movement along ActivePath
+                perform_eat_system,        // Execute eating actions
+                // Core systems
                 calorie_burn_system,
                 death_system,
                 tick_counter_system,
             ).chain().run_if(in_state(GameState::Running)),
         )
         .add_systems(
-            Update, 
+            Update, // System run every frame
             (
-                spatial_grid_system,
                 toggle_pause_system,
                 exit_on_escape_system,
                 spawn_creature_visuals_system,
@@ -61,7 +64,6 @@ fn main() {
                 update_creature_color_system,
                 update_creature_position_system,
                 update_tick_text_system,
-                update_tile_visuals_system,
             ).chain(),
         )
         .insert_resource(Time::<Fixed>::from_hz(TICK_RATE_HZ))

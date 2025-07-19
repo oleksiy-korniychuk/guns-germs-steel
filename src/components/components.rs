@@ -12,33 +12,36 @@ pub struct Calories {
     pub max: i32,
 }
 
-#[derive(Component, Debug, PartialEq)]
-pub enum FsmState {
-    Wandering,
-    Traveling,
-    Eating {
-        progress: u32,
-        max_progress: u32,
-        entity: Option<Entity>,
-    },
+#[derive(Component, Debug)]
+pub struct FoodSource {
+    pub nutrition_value: i32,
 }
+
+// --- Intent Components ---
 
 #[derive(Component, Debug)]
-pub struct Goals {
-    pub list: Vec<Goal>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Goal {
-    Eat,
-}
+pub struct WantsToEat;
 
 #[derive(Component, Debug)]
-pub struct Target(pub Option<Entity>);
+pub struct WantsToIdle;
 
-#[derive(Component)]
-pub struct MoveTo {
+// --- Action Components ---
+
+#[derive(Component, Debug)]
+pub struct ActionTravelTo {
     pub destination: Position,
+}
+
+#[derive(Component, Debug)]
+pub struct ActionEat {
+    pub target_entity: Entity,
+    pub progress: u32,
+    pub max_progress: u32,
+}
+
+#[derive(Component, Debug)]
+pub struct ActivePath {
+    pub nodes: Vec<Position>,
 }
 
 // --- Markers ---

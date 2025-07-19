@@ -27,17 +27,11 @@ pub fn setup_system(mut commands: Commands) {
         CreatureMarker,
         Position { x: 10, y: 10 },
         Calories { current: 100, max: 100 },
-        FsmState::Wandering,
-        Goals { list: vec![] },
-        Target(None),
     ));
     commands.spawn((
         CreatureMarker,
         Position { x: 15, y: 12 },
         Calories { current: 60, max: 100 },
-        FsmState::Wandering,
-        Goals { list: vec![] },
-        Target(None),
     ));
     // Plants
     for _ in 0..STARTING_GRASS_COUNT {
@@ -46,7 +40,7 @@ pub fn setup_system(mut commands: Commands) {
         commands.spawn((
             PlantMarker,
             Position { x: x as i32, y: y as i32 },
-            Calories { current: 20, max: 20 },
+            FoodSource { nutrition_value: 20 },
             Harvestable,
             Edible,
         ));

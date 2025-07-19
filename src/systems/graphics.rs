@@ -1,9 +1,5 @@
 use bevy::prelude::*;
 use crate::resources::{
-    game_grid::{
-        GameGrid,
-        TileKind,
-    },
     tick_count::TickCount,
 };
 use crate::components::components::*;
@@ -18,15 +14,9 @@ pub fn spawn_creature_visuals_system(
     let mut rng = rand::rng();
     
     for (entity, pos) in query.iter() {
-        let headband_color = Color::srgb(
-            rng.random_range(0.0..1.0),
-            rng.random_range(0.0..1.0), 
-            rng.random_range(0.0..1.0)
-        );
-        
         commands.entity(entity).insert(
             Sprite {
-                color: Color::srgb(1.0, 1.0, 0.0), // Default color
+                color: Color::srgb(0.0, 1.0, 0.0), // Default color
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 image: asset_server.load("sprites/human_v2.png"),
                 ..default()
@@ -43,7 +33,7 @@ pub fn spawn_creature_visuals_system(
         // Create a child entity for the headband
         let headband_entity = commands.spawn((
             Sprite {
-                color: headband_color, // This color stays the same
+                color: HEADBAND_COLORS[rng.random_range(0..HEADBAND_COLORS.len())],
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 image: asset_server.load("sprites/human_headband_v2.png"),
                 ..default()
@@ -117,24 +107,3 @@ pub fn update_tick_text_system(
         }
     }
 }
-
-// System to update tile colors when they change (e.g., grass is eaten)
-pub fn update_tile_visuals_system(
-    grid: Res<GameGrid>,
-    mut query: Query<(&mut Sprite, &Position), With<TileMarker>>,
-) {
-    if grid.is_changed() {
-        for (mut sprite, pos) in query.iter_mut() {
-            let tile = &grid.tiles[pos.y as usize][pos.x as usize];
-            (sprite.color, sprite.image) = match tile.kind {
-                TileKind::Empty => {
-                    if (pos.x + pos.y) % 2 == 0 {
-                        (Color::srgb(0.4, 0.4, 0.4), default())
-                    } else {
-                        (Color::srgb(0.5, 0.5, 0.5), default())
-                    }
-                }
-            };
-        }
-    }
-} 
