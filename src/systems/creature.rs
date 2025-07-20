@@ -18,7 +18,8 @@ pub fn goal_selection_system(
         Without<WantsToIdle>,
         Without<ActionTravelTo>,
         Without<ActionEat>,
-        Without<ActivePath>
+        Without<ActivePath>,
+        Without<WantsToProcreate>,
     )>,
 ) {
     for (entity, calories) in creature_query.iter() {
