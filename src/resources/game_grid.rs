@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::prelude::{Resource, Entity};
 use std::collections::HashMap;
 use crate::components::components::Position;
 
