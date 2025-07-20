@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use rand::Rng;
 use crate::components::components::*;
 use crate::resources::{
     game_grid::{
@@ -7,6 +6,7 @@ use crate::resources::{
     },
 };
 use crate::constants::*;
+use std::collections::HashSet;
 
 
 // --- Intent-Driven Systems ---
@@ -54,25 +54,35 @@ pub fn perform_eat_system(
     mut creature_query: Query<(Entity, &Position, &mut Calories, &mut ActionEat), (With<CreatureMarker>, Without<ActivePath>)>,
     plant_query: Query<(&Position, &FoodSource), (With<PlantMarker>, With<Harvestable>, With<Edible>, Without<CreatureMarker>)>,
 ) {
+    let mut plants_being_eaten = HashSet::new();
+    
     for (creature_entity, creature_pos, mut creature_calories, mut eat_action) in creature_query.iter_mut() {
         if let Ok((plant_pos, plant_food)) = plant_query.get(eat_action.target_entity) {
-            // Check if creature is at the plant location
             if *creature_pos == *plant_pos {
-                // Handle eating progress
+                // Check if another creature is already eating this plant this tick
+                if plants_being_eaten.contains(&eat_action.target_entity) {
+                    // Collision detected, reset this creature's intent
+                    commands.entity(creature_entity)
+                        .remove::<ActionEat>();
+                    continue;
+                }
+                
+                // Mark this plant as being eaten this tick
+                plants_being_eaten.insert(eat_action.target_entity);
+                
                 eat_action.progress += 1;
                 creature_calories.current -= WORK_COST;
                 
                 if eat_action.progress >= eat_action.max_progress {
-                    // Finished eating
                     creature_calories.current += plant_food.nutrition_value;
                     commands.entity(eat_action.target_entity).despawn();
-                    commands.entity(creature_entity)
-                        .remove::<ActionEat>();
+                    commands.entity(creature_entity).remove::<ActionEat>();
                 }
             }
         } else {
-            // Target doesn't exist anymore, remove action
-            commands.entity(creature_entity).remove::<ActionEat>();
+            // Target doesn't exist anymore, reset to searching
+            commands.entity(creature_entity)
+                .remove::<ActionEat>();
         }
     }
 }
@@ -98,10 +108,14 @@ pub fn find_food_system(
     food_pos_query: Query<&Position, (With<PlantMarker>, With<Harvestable>, With<Edible>)>,
     spatial_grid: Res<SpatialGrid>,
 ) {
+    let mut targeted_plants = HashSet::new();
+    
     for (creature_entity, creature_pos) in creature_query.iter() {
-        if let Some(food_entity) = find_closest_food_entity(&spatial_grid, &food_query, *creature_pos) {
+        if let Some(food_entity) = find_closest_available_food(&spatial_grid, &food_query, *creature_pos, &targeted_plants) {
             if let Ok(food_pos) = food_pos_query.get(food_entity) {
-                // Remove the intent and add specific actions
+                // Mark this plant as targeted
+                targeted_plants.insert(food_entity);
+                
                 commands.entity(creature_entity)
                     .remove::<WantsToEat>()
                     .insert(ActionTravelTo { destination: *food_pos })
@@ -112,7 +126,6 @@ pub fn find_food_system(
                     });
             }
         } else {
-            // No food found, remove intent and creature will get new goal next tick
             commands.entity(creature_entity).remove::<WantsToEat>();
         }
     }
@@ -122,26 +135,58 @@ pub fn idle_goal_selection_system(
     mut commands: Commands,
     creature_query: Query<(Entity, &Position, &Calories), (With<CreatureMarker>, With<WantsToIdle>)>,
 ) {
-    let mut rng = rand::rng();
+    // let mut rng = rand::rng();
     for (entity, pos, calories) in creature_query.iter() {
         if calories.current < calories.max {
             commands.entity(entity).remove::<WantsToIdle>();
             commands.entity(entity).insert(WantsToEat);
+        } else {
+            commands.entity(entity).remove::<WantsToIdle>();
+            commands.entity(entity).insert(WantsToProcreate);
         }
-        else {
-            let mut new_pos = *pos;
-            match rng.random_range(0..5) {
-                0 => new_pos.y = (new_pos.y - 1).max(0),
-                1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
-                2 => new_pos.x = (new_pos.x - 1).max(0),
-                3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
-                _ => {} // Stay put
-            }
+        // else {
+        //     let mut new_pos = *pos;
+        //     match rng.random_range(0..5) {
+        //         0 => new_pos.y = (new_pos.y - 1).max(0),
+        //         1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
+        //         2 => new_pos.x = (new_pos.x - 1).max(0),
+        //         3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
+        //         _ => {} // Stay put
+        //     }
             
-            commands.entity(entity)
-                .remove::<WantsToIdle>()
-                .insert(ActionTravelTo { destination: new_pos });
+        //     commands.entity(entity)
+        //         .remove::<WantsToIdle>()
+        //         .insert(ActionTravelTo { destination: new_pos });
+        // }
+    }
+}
+
+pub fn procreation_system(
+    mut commands: Commands,
+    mut creature_query: Query<(Entity, &Position, &mut Calories), (With<CreatureMarker>, With<WantsToProcreate>)>,
+) {
+    for (entity, pos, mut calories) in creature_query.iter_mut() {
+        let mut spawn_position = *pos;
+
+        // Check all adjacent positions
+        if pos.y > 0 { 
+            spawn_position = Position { x: pos.x, y: pos.y - 1 }; 
+        } else if pos.y < GRID_HEIGHT as i32 - 1 { 
+            spawn_position = Position { x: pos.x, y: pos.y + 1 }; 
+        } else if pos.x > 0 { 
+            spawn_position = Position { x: pos.x - 1, y: pos.y }; 
+        } else if pos.x < GRID_WIDTH as i32 - 1 { 
+            spawn_position = Position { x: pos.x + 1, y: pos.y }; 
         }
+
+        commands.spawn((
+            CreatureMarker,
+            Position { x: spawn_position.x, y: spawn_position.y },
+            Calories { current: 50, max: 100 },
+        ));
+
+        calories.current -= (calories.max as f32 * 0.5) as i32;
+        commands.entity(entity).remove::<WantsToProcreate>();
     }
 }
 
@@ -177,17 +222,15 @@ pub fn pathfinding_system(
 // --- Helper Functions ---
 
 // Optimized search function using a spatial grid.
-fn find_closest_food_entity(
+fn find_closest_available_food(
     grid: &Res<SpatialGrid>,
     food_query: &Query<(), (With<PlantMarker>, With<Harvestable>, With<Edible>)>,
     start_pos: Position,
+    targeted_plants: &HashSet<Entity>,
 ) -> Option<Entity> {
-    // Search in an expanding spiral pattern for efficiency.
-    // Start with a search radius of 0.
-    for radius in 0i32..100 { // Limit search radius to avoid infinite loops
+    for radius in 0i32..100 {
         for dx in -radius..=radius {
             for dy in -radius..=radius {
-                // Only check the cells on the perimeter of the current search box
                 if dx.abs() != radius && dy.abs() != radius {
                     continue;
                 }
@@ -196,15 +239,13 @@ fn find_closest_food_entity(
 
                 if let Some(entities_in_cell) = grid.0.get(&check_pos) {
                     for &entity in entities_in_cell {
-                        // Check if the entity in the cell is actually food.
-                        if food_query.get(entity).is_ok() {
-                            return Some(entity); // Found the closest food!
+                        if food_query.get(entity).is_ok() && !targeted_plants.contains(&entity) {
+                            return Some(entity);
                         }
                     }
                 }
             }
         }
     }
-
-    None // No food found within the search radius
+    None
 }

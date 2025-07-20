@@ -49,10 +49,12 @@ fn main() {
                 pathfinding_system,        // Convert ActionTravelTo to ActivePath
                 perform_movement_system,    // Execute movement along ActivePath
                 perform_eat_system,        // Execute eating actions
+                procreation_system,        // Execute procreation actions
                 // Core systems
                 calorie_burn_system,
                 death_system,
                 plant_propogation_system,
+                population_counter_system,
                 tick_counter_system,
             ).chain().run_if(in_state(GameState::Running)),
         )
@@ -65,6 +67,7 @@ fn main() {
                 spawn_plant_visuals_system,
                 update_creature_color_system,
                 update_creature_position_system,
+                update_population_text_system,
                 update_tick_text_system,
             ).chain(),
         )

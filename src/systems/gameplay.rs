@@ -6,6 +6,7 @@ use crate::resources::{
         SpatialGrid,
     },
     tick_count::TickCount,
+    population_count::PopulationCount,
 };
 use crate::constants::*;
 
@@ -22,6 +23,14 @@ pub fn spatial_grid_system(
 
 pub fn tick_counter_system(mut tick_count: ResMut<TickCount>) {
     tick_count.0 += 1;
+}
+
+pub fn population_counter_system(
+    creature_query: Query<&CreatureMarker>,
+    mut population_count: ResMut<PopulationCount>,
+) {
+    let population = creature_query.iter().count();
+    population_count.0 = population as u32;
 }
 
 pub fn plant_propogation_system(

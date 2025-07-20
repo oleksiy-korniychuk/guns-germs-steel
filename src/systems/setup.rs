@@ -9,6 +9,7 @@ use crate::resources::game_grid::{
 };
 use crate::components::components::*;
 use crate::resources::tick_count::TickCount;
+use crate::resources::population_count::PopulationCount;
 
 pub fn setup_system(mut commands: Commands) {
     commands.spawn(Camera2d::default());
@@ -20,6 +21,7 @@ pub fn setup_system(mut commands: Commands) {
     commands.insert_resource(GameGrid { tiles: grid_tiles });
     commands.insert_resource(SpatialGrid::default());
     commands.insert_resource(TickCount::default());
+    commands.insert_resource(PopulationCount::default());
 
     // --- Spawning Initial Entities ---
     // Spawn Creatures
@@ -90,6 +92,16 @@ pub fn setup_visualization_system(
         Node {
             position_type: PositionType::Absolute,
             top: Val::Px(10.0),
+            left: Val::Px(10.0),
+            ..default()
+        },
+    ));
+    commands.spawn((
+        PopulationText,
+        Text::new("Population: 0"),
+        Node {
+            position_type: PositionType::Absolute,
+            top: Val::Px(30.0),
             left: Val::Px(10.0),
             ..default()
         },

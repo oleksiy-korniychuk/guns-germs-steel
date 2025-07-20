@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::resources::{
     tick_count::TickCount,
+    population_count::PopulationCount,
 };
 use crate::components::components::*;
 use crate::constants::*;
@@ -95,15 +96,26 @@ pub fn update_creature_color_system(mut query: Query<(&mut Sprite, &Calories), W
     }
 }
 
-// System to update the tick counter text
 pub fn update_tick_text_system(
     tick_count: Res<TickCount>,
     mut query: Query<&mut Text, With<TickText>>,
 ) {
     if tick_count.is_changed() {
-        for mut text in query.iter_mut() {
+        if let Ok(mut text) = query.single_mut() {
             text.clear();
             text.push_str(&format!("Tick: {}", tick_count.0));
+        }
+    }
+}
+
+pub fn update_population_text_system(
+    population_count: Res<PopulationCount>,
+    mut query: Query<&mut Text, With<PopulationText>>,
+) {
+    if population_count.is_changed() {
+        if let Ok(mut text) = query.single_mut() {
+            text.clear();
+            text.push_str(&format!("Population: {}", population_count.0));
         }
     }
 }

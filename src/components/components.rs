@@ -25,6 +25,9 @@ pub struct WantsToEat;
 #[derive(Component, Debug)]
 pub struct WantsToIdle;
 
+#[derive(Component, Debug)]
+pub struct WantsToProcreate;
+
 // --- Action Components ---
 
 #[derive(Component, Debug)]
@@ -65,6 +68,9 @@ pub struct Harvestable;
 
 #[derive(Component)]
 pub struct TickText;
+
+#[derive(Component)]
+pub struct PopulationText;
 
 // --- Enums ---
 #[derive(Debug, Clone, Copy, PartialEq)]
