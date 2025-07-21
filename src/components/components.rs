@@ -52,6 +52,12 @@ pub struct ActivePath {
 #[derive(Component)]
 pub struct CreatureMarker;
 
+#[derive(Component, Debug)]
+pub struct Pregnant {
+    pub progress: u32,
+    pub max_progress: u32,
+}
+
 #[derive(Component)]
 pub struct PlantMarker {
     pub plant_type: PlantType,

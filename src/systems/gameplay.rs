@@ -43,20 +43,21 @@ pub fn plant_propogation_system(
         if spawn_plant {
             let mut empty_neighbors = Vec::new();
             
-            // Check all 8 surrounding positions
-            for x in -1..=1 {
-                for y in -1..=1 {
-                    let neighbor_x = pos.x + x;
-                    let neighbor_y = pos.y + y;
-                    
-                    // Check if position is within grid bounds
-                    if neighbor_x >= 0 && neighbor_x < GRID_WIDTH as i32 &&
-                       neighbor_y >= 0 && neighbor_y < GRID_HEIGHT as i32 {
-                        let neighbor_pos = Position { x: neighbor_x, y: neighbor_y };
+            for x in -2i32..=2i32 {
+                for y in -2i32..=2i32 {
+                    if !(x == 0 && y == 0) {
+                        let neighbor_x = pos.x + x;
+                        let neighbor_y = pos.y + y;
                         
-                        // Check if this position is empty (no entities at this position)
-                        if !grid.0.contains_key(&neighbor_pos) {
-                            empty_neighbors.push(neighbor_pos);
+                        // Check if position is within grid bounds
+                        if neighbor_x >= 0 && neighbor_x < GRID_WIDTH as i32 &&
+                           neighbor_y >= 0 && neighbor_y < GRID_HEIGHT as i32 {
+                            let neighbor_pos = Position { x: neighbor_x, y: neighbor_y };
+                            
+                            // Check if this position is empty (no entities at this position)
+                            if !grid.0.contains_key(&neighbor_pos) {
+                                empty_neighbors.push(neighbor_pos);
+                            }
                         }
                     }
                 }
@@ -70,7 +71,7 @@ pub fn plant_propogation_system(
                 commands.spawn((
                     PlantMarker { plant_type: plant_marker.plant_type },
                     Position { x: spawn_pos.x, y: spawn_pos.y },
-                    FoodSource { nutrition_value: 20 },
+                    FoodSource { nutrition_value: WHEAT_NUTRIENTS },
                     Harvestable,
                     Edible,
                 ));

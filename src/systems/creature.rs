@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rand::Rng;
 use crate::components::components::*;
 use crate::resources::{
     game_grid::{
@@ -21,12 +22,15 @@ pub fn goal_selection_system(
         Without<ActivePath>,
         Without<WantsToProcreate>,
     )>,
+    pregnant_query: Query<(Entity, &mut Pregnant)>,
 ) {
     for (entity, calories) in creature_query.iter() {
         let is_hungry = calories.current < (calories.max as f32 * 0.5) as i32;
         
         if is_hungry {
             commands.entity(entity).insert(WantsToEat);
+        } else if !pregnant_query.get(entity).is_ok() && calories.current >= (calories.max as f32 * 0.75) as i32 {
+            commands.entity(entity).insert(WantsToProcreate);
         } else {
             commands.entity(entity).insert(WantsToIdle);
         }
@@ -136,61 +140,69 @@ pub fn idle_goal_selection_system(
     mut commands: Commands,
     creature_query: Query<(Entity, &Position, &Calories), (With<CreatureMarker>, With<WantsToIdle>)>,
 ) {
-    // let mut rng = rand::rng();
+    let mut rng = rand::rng();
     for (entity, pos, calories) in creature_query.iter() {
         if calories.current < calories.max {
             commands.entity(entity).remove::<WantsToIdle>();
             commands.entity(entity).insert(WantsToEat);
         } else {
-            commands.entity(entity).remove::<WantsToIdle>();
-            commands.entity(entity).insert(WantsToProcreate);
-        }
-        // else {
-        //     let mut new_pos = *pos;
-        //     match rng.random_range(0..5) {
-        //         0 => new_pos.y = (new_pos.y - 1).max(0),
-        //         1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
-        //         2 => new_pos.x = (new_pos.x - 1).max(0),
-        //         3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
-        //         _ => {} // Stay put
-        //     }
+            let mut new_pos = *pos;
+            match rng.random_range(0..5) {
+                0 => new_pos.y = (new_pos.y - 1).max(0),
+                1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
+                2 => new_pos.x = (new_pos.x - 1).max(0),
+                3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
+                _ => {} // Stay put
+            }
             
-        //     commands.entity(entity)
-        //         .remove::<WantsToIdle>()
-        //         .insert(ActionTravelTo { destination: new_pos });
-        // }
+            commands.entity(entity)
+                .remove::<WantsToIdle>()
+                .insert(ActionTravelTo { destination: new_pos });
+        }
     }
 }
 
 pub fn procreation_system(
     mut commands: Commands,
-    mut creature_query: Query<(Entity, &Position, &mut Calories), (With<CreatureMarker>, With<WantsToProcreate>)>,
+    mut creature_query: Query<(Entity, &mut Calories), (With<CreatureMarker>, With<WantsToProcreate>)>,
 ) {
-    for (entity, pos, mut calories) in creature_query.iter_mut() {
-        let mut spawn_position = *pos;
-
-        // Check all adjacent positions
-        if pos.y > 0 { 
-            spawn_position = Position { x: pos.x, y: pos.y - 1 }; 
-        } else if pos.y < GRID_HEIGHT as i32 - 1 { 
-            spawn_position = Position { x: pos.x, y: pos.y + 1 }; 
-        } else if pos.x > 0 { 
-            spawn_position = Position { x: pos.x - 1, y: pos.y }; 
-        } else if pos.x < GRID_WIDTH as i32 - 1 { 
-            spawn_position = Position { x: pos.x + 1, y: pos.y }; 
-        }
-
-        commands.spawn((
-            CreatureMarker,
-            Position { x: spawn_position.x, y: spawn_position.y },
-            Calories { current: 50, max: 100 },
-        ));
-
-        calories.current -= (calories.max as f32 * 0.5) as i32;
+    for (entity, mut calories) in creature_query.iter_mut() {
+        calories.current -= PREGNANT_COST;
+        commands.entity(entity).insert(Pregnant { progress: 0, max_progress: HUMAN_PREGNANCY_DURATION });
         commands.entity(entity).remove::<WantsToProcreate>();
     }
 }
 
+pub fn pregnancy_system(
+    mut commands: Commands,
+    mut creature_query: Query<(Entity, &mut Pregnant, &Position), (With<CreatureMarker>, With<Pregnant>)>,
+) {
+    for (entity, mut pregnant, pos) in creature_query.iter_mut() {
+        pregnant.progress += 1;
+        if pregnant.progress >= pregnant.max_progress {
+            let mut spawn_position = *pos;
+
+            // Check all adjacent positions
+            if pos.y > 0 { 
+                spawn_position = Position { x: pos.x, y: pos.y - 1 }; 
+            } else if pos.y < GRID_HEIGHT as i32 - 1 { 
+                spawn_position = Position { x: pos.x, y: pos.y + 1 }; 
+            } else if pos.x > 0 { 
+                spawn_position = Position { x: pos.x - 1, y: pos.y }; 
+            } else if pos.x < GRID_WIDTH as i32 - 1 { 
+                spawn_position = Position { x: pos.x + 1, y: pos.y }; 
+            }
+
+            commands.spawn((
+                CreatureMarker,
+                Position { x: spawn_position.x, y: spawn_position.y },
+                Calories { current: (HUMAN_MAX_CALORIES / 2) as i32, max: HUMAN_MAX_CALORIES },
+            ));
+
+            commands.entity(entity).remove::<Pregnant>();
+        }
+    }
+}
 
 // Simple pathfinding system that only calculates the next step (For now)
 pub fn pathfinding_system(

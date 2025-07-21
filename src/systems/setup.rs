@@ -27,13 +27,13 @@ pub fn setup_system(mut commands: Commands) {
     // Spawn Creatures
     commands.spawn((
         CreatureMarker,
-        Position { x: 10, y: 10 },
-        Calories { current: 100, max: 100 },
+        Position { x: rng.random_range(0..GRID_WIDTH as i32), y: rng.random_range(0..GRID_HEIGHT as i32) },
+        Calories { current: HUMAN_MAX_CALORIES, max: HUMAN_MAX_CALORIES },
     ));
     commands.spawn((
         CreatureMarker,
-        Position { x: 15, y: 12 },
-        Calories { current: 60, max: 100 },
+        Position { x: rng.random_range(0..GRID_WIDTH as i32), y: rng.random_range(0..GRID_HEIGHT as i32) },
+        Calories { current: HUMAN_MAX_CALORIES, max: HUMAN_MAX_CALORIES },
     ));
     // Spawn Plants
     for _ in 0..STARTING_GRASS_COUNT {
@@ -42,7 +42,7 @@ pub fn setup_system(mut commands: Commands) {
         commands.spawn((
             PlantMarker { plant_type: PlantType::Wheat },
             Position { x: x as i32, y: y as i32 },
-            FoodSource { nutrition_value: 20 },
+            FoodSource { nutrition_value: WHEAT_NUTRIENTS },
             Harvestable,
             Edible,
         ));

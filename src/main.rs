@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::input::common_conditions::input_just_pressed;
 
 mod resources;
 mod systems;
@@ -14,6 +15,7 @@ use systems::{
     graphics::*,
     gameplay::*,
     creature::*,
+    input::*,
 };
 use constants::*;
 
@@ -41,7 +43,6 @@ fn main() {
         .add_systems(
             FixedUpdate, // System run every tick
             (
-                spatial_grid_system,
                 // Intent-Driven Systems
                 goal_selection_system,      // Brain: assigns intents (WantsTo*)
                 idle_goal_selection_system,   // Convert WantsToIdle to actions
@@ -51,6 +52,7 @@ fn main() {
                 perform_eat_system,        // Execute eating actions
                 procreation_system,        // Execute procreation actions
                 // Core systems
+                pregnancy_system,
                 calorie_burn_system,
                 death_system,
                 plant_propogation_system,
@@ -61,6 +63,7 @@ fn main() {
         .add_systems(
             Update, // System run every frame
             (
+                spatial_grid_system,
                 toggle_pause_system,
                 exit_on_escape_system,
                 spawn_creature_visuals_system,
@@ -69,6 +72,7 @@ fn main() {
                 update_creature_position_system,
                 update_population_text_system,
                 update_tick_text_system,
+                cursor_click_system.run_if(input_just_pressed(MouseButton::Left)),
             ).chain(),
         )
         .insert_resource(Time::<Fixed>::from_hz(TICK_RATE_HZ))
