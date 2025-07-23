@@ -5,6 +5,7 @@ use crate::resources::{
     game_grid::{
         SpatialGrid,
     },
+    band_center::BandCenter,
 };
 use crate::constants::*;
 use std::collections::HashSet;
@@ -13,21 +14,28 @@ use std::collections::HashSet;
 // --- Intent-Driven Systems ---
 pub fn goal_selection_system(
     mut commands: Commands,
-    creature_query: Query<(Entity, &Calories), (
+    creature_query: Query<(Entity, &Calories, &Position), (
         With<CreatureMarker>,
         Without<WantsToEat>,
         Without<WantsToIdle>,
+        Without<WantsToProcreate>,
+        Without<WantsToReturnToBand>,
         Without<ActionTravelTo>,
         Without<ActionEat>,
         Without<ActivePath>,
-        Without<WantsToProcreate>,
+        Without<OutsideBandRadius>,
     )>,
     pregnant_query: Query<(Entity, &mut Pregnant)>,
+    band_center: Res<BandCenter>,
 ) {
-    for (entity, calories) in creature_query.iter() {
+    for (entity, calories, pos) in creature_query.iter() {
         let is_hungry = calories.current < (calories.max as f32 * 0.5) as i32;
+        let is_outside_band_radius = is_outside_band_radius(*pos, band_center.0);
         
-        if is_hungry {
+
+        if is_outside_band_radius {
+            commands.entity(entity).insert(WantsToReturnToBand);
+        } else if is_hungry {
             commands.entity(entity).insert(WantsToEat);
         } else if !pregnant_query.get(entity).is_ok() && calories.current >= (calories.max as f32 * 0.75) as i32 {
             commands.entity(entity).insert(WantsToProcreate);
@@ -232,6 +240,49 @@ pub fn pathfinding_system(
     }
 }
 
+pub fn return_to_band_system(
+    mut commands: Commands,
+    creature_query: Query<Entity, (With<CreatureMarker>, With<WantsToReturnToBand>)>,
+    band_center: Res<BandCenter>,
+) {
+    for entity in creature_query.iter() {
+        commands.entity(entity).insert(OutsideBandRadius);
+        commands.entity(entity).remove::<WantsToReturnToBand>();
+        commands.entity(entity).insert(ActionTravelTo { destination: band_center.0 });
+    }
+}
+
+pub fn check_if_returned_to_band_system(
+    mut commands: Commands,
+    creature_query: Query<(Entity, &Position), (With<CreatureMarker>, With<OutsideBandRadius>)>,
+    band_center: Res<BandCenter>,
+) {
+    for (entity, pos) in creature_query.iter() {
+        if !is_outside_band_radius(*pos, band_center.0) {
+            commands.entity(entity).remove::<OutsideBandRadius>();
+            commands.entity(entity).remove::<ActionTravelTo>();
+        }
+    }
+}
+
+pub fn update_band_center_system(
+    creature_query: Query<&Position, With<CreatureMarker>>,
+    mut band_center: ResMut<BandCenter>,
+) {
+    if creature_query.is_empty() {
+        return;
+    }
+    
+    let mut new_band_center = Position { x: 0, y: 0 };
+    for pos in creature_query.iter() {
+        new_band_center.x += pos.x;
+        new_band_center.y += pos.y;
+    }
+    new_band_center.x /= creature_query.iter().count() as i32;
+    new_band_center.y /= creature_query.iter().count() as i32;
+    band_center.0 = new_band_center;
+}
+
 // --- Helper Functions ---
 
 // Optimized search function using a spatial grid.
@@ -261,4 +312,16 @@ fn find_closest_available_food(
         }
     }
     None
+}
+
+pub fn is_outside_band_radius(
+    pos: Position,
+    band_center: Position,
+) -> bool {
+    let dx = band_center.x - pos.x;
+    let dy = band_center.y - pos.y;
+    if dx * dx + dy * dy > BAND_RADIUS * BAND_RADIUS {
+        return true;
+    }
+    false
 }

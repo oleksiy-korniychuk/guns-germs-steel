@@ -72,7 +72,7 @@ pub fn spawn_plant_visuals_system(
 }
 
 // System to update the visual position of creatures when their grid Position changes
-pub fn update_creature_position_system(
+pub fn update_creature_position_visuals_system(
     mut query: Query<(&mut Transform, &Position), With<CreatureMarker>>,
 ) {
     for (mut transform, pos) in query.iter_mut() {

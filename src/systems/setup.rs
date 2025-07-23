@@ -1,15 +1,18 @@
 use bevy::prelude::*;
 use rand::Rng;
 use crate::constants::*;
-use crate::resources::game_grid::{
-    GameGrid,
-    TileKind,
-    Tile,
-    SpatialGrid,
+use crate::resources::{
+    game_grid::{
+        GameGrid,
+        TileKind,
+        Tile,
+        SpatialGrid,
+    },
+    band_center::BandCenter,
+    tick_count::TickCount,
+    population_count::PopulationCount,
 };
 use crate::components::components::*;
-use crate::resources::tick_count::TickCount;
-use crate::resources::population_count::PopulationCount;
 
 pub fn setup_system(mut commands: Commands) {
     commands.spawn(Camera2d::default());
@@ -22,6 +25,7 @@ pub fn setup_system(mut commands: Commands) {
     commands.insert_resource(SpatialGrid::default());
     commands.insert_resource(TickCount::default());
     commands.insert_resource(PopulationCount::default());
+    commands.insert_resource(BandCenter(Position { x: 0, y: 0 }));
 
     // --- Spawning Initial Entities ---
     // Spawn Creatures
@@ -85,7 +89,7 @@ pub fn setup_visualization_system(
         }
     }
     
-    // --- Draw the UI Text ---
+    // --- Draw the UI/UX Elements ---
     commands.spawn((
         TickText,
         Text::new("Tick: 0"),

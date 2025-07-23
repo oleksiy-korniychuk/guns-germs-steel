@@ -48,10 +48,13 @@ fn main() {
                 idle_goal_selection_system,   // Convert WantsToIdle to actions
                 find_food_system,          // Convert WantsToEat to actions  
                 pathfinding_system,        // Convert ActionTravelTo to ActivePath
+                return_to_band_system,      // Convert WantsToReturnToBand to ActionTravelTo
                 perform_movement_system,    // Execute movement along ActivePath
                 perform_eat_system,        // Execute eating actions
                 procreation_system,        // Execute procreation actions
+                check_if_returned_to_band_system, // Remove OutsideBandRadius if returned to band
                 // Core systems
+                update_band_center_system,
                 pregnancy_system,
                 calorie_burn_system,
                 death_system,
@@ -64,15 +67,17 @@ fn main() {
             Update, // System run every frame
             (
                 spatial_grid_system,
-                toggle_pause_system,
-                exit_on_escape_system,
-                spawn_creature_visuals_system,
-                spawn_plant_visuals_system,
-                update_creature_color_system,
-                update_creature_position_system,
-                update_population_text_system,
-                update_tick_text_system,
-                cursor_click_system.run_if(input_just_pressed(MouseButton::Left)),
+                (
+                    toggle_pause_system,
+                    exit_on_escape_system,
+                    spawn_creature_visuals_system,
+                    spawn_plant_visuals_system,
+                    update_creature_color_system,
+                    update_creature_position_visuals_system,
+                    update_population_text_system,
+                    update_tick_text_system,
+                    cursor_click_system.run_if(input_just_pressed(MouseButton::Left))
+                ),
             ).chain(),
         )
         .insert_resource(Time::<Fixed>::from_hz(TICK_RATE_HZ))

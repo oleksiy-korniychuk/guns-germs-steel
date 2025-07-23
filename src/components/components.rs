@@ -28,6 +28,9 @@ pub struct WantsToIdle;
 #[derive(Component, Debug)]
 pub struct WantsToProcreate;
 
+#[derive(Component, Debug)]
+pub struct WantsToReturnToBand;
+
 // --- Action Components ---
 
 #[derive(Component, Debug)]
@@ -46,6 +49,9 @@ pub struct ActionEat {
 pub struct ActivePath {
     pub nodes: Vec<Position>,
 }
+
+#[derive(Component, Debug)]
+pub struct OutsideBandRadius;
 
 // --- Markers ---
 
@@ -77,6 +83,9 @@ pub struct TickText;
 
 #[derive(Component)]
 pub struct PopulationText;
+
+#[derive(Component)]
+pub struct BandCenterMarker;
 
 // --- Enums ---
 #[derive(Debug, Clone, Copy, PartialEq)]
