@@ -4,3 +4,4 @@ pub mod tick_count;
 pub mod population_count;
 pub mod band_center;
 pub mod seed;
+pub mod camera_zoom;

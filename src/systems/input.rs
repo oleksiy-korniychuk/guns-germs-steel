@@ -1,7 +1,11 @@
 use bevy::prelude::*;
+use bevy::input::mouse::MouseScrollUnit;
 
 use crate::constants::*;
-use crate::resources::game_grid::SpatialGrid;
+use crate::resources::{
+    game_grid::SpatialGrid,
+    camera_zoom::CameraZoom,
+};
 use crate::components::components::*;
 
 
@@ -29,6 +33,27 @@ pub fn cursor_click_system(
             }
         }
 
+    }
+}
+
+pub fn camera_zoom_system(
+    mut scroll_evr: EventReader<MouseWheel>,
+    mut camera_zoom: ResMut<CameraZoom>,
+    mut camera_query: Query<&mut OrthographicProjection, With<Camera2d>>,
+) {
+    for ev in scroll_evr.read() {
+        let zoom_delta = match ev.unit {
+            MouseScrollUnit::Line => ev.y * ZOOM_SPEED,
+            MouseScrollUnit::Pixel => ev.y * ZOOM_SPEED * 0.01,
+        };
+        
+        // Update zoom level
+        camera_zoom.0 = (camera_zoom.0 - zoom_delta).clamp(MIN_ZOOM, MAX_ZOOM);
+        
+        // Apply zoom to camera
+        if let Ok(mut projection) = camera_query.single_mut() {
+            projection.scale = camera_zoom.0;
+        }
     }
 }
 

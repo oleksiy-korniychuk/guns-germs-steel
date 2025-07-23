@@ -8,6 +8,7 @@ mod constants;
 
 use resources::{
     game_state::GameState,
+    camera_zoom::CameraZoom,
 };
 use systems::{
     ux::*,
@@ -25,14 +26,15 @@ fn main() {
             primary_window: Some(Window {
                 title: "Guns, Germs, and Steel!".into(),
                 resolution: (
-                    GRID_WIDTH as f32 * TILE_SIZE,
-                    GRID_HEIGHT as f32 * TILE_SIZE,
+                    DEFAULT_WINDOW_WIDTH,
+                    DEFAULT_WINDOW_HEIGHT,
                 ).into(),
                 ..default()
             }),
             ..default()
         }))
         .init_state::<GameState>()
+        .init_resource::<CameraZoom>()
         .add_systems(
             Startup, 
             (
@@ -70,6 +72,7 @@ fn main() {
                 (
                     toggle_pause_system,
                     exit_on_escape_system,
+                    camera_zoom_system,
                     spawn_creature_visuals_system,
                     spawn_plant_visuals_system,
                     update_creature_color_system,
