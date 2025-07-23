@@ -9,7 +9,9 @@ pub struct GameGrid {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TileKind {
-    Empty
+    Empty,
+    Dirt,
+    Water,
 }
 
 #[derive(Clone, Copy, Debug)]

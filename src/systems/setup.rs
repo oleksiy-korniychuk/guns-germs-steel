@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 use rand::Rng;
+use rand_pcg::Pcg32;
+use noise::{NoiseFn, Perlin};
+
 use crate::constants::*;
 use crate::resources::{
     game_grid::{
@@ -11,6 +14,7 @@ use crate::resources::{
     band_center::BandCenter,
     tick_count::TickCount,
     population_count::PopulationCount,
+    seed::WorldSeed,
 };
 use crate::components::components::*;
 
@@ -19,13 +23,15 @@ pub fn setup_system(mut commands: Commands) {
 
     // --- Resource Setup ---
     let mut rng = rand::rng();
-    let grid_tiles = vec![vec![Tile { kind: TileKind::Empty }; GRID_WIDTH]; GRID_HEIGHT];
+    let world_seed = generate_seed();
+    let grid_tiles = generate_height_map(world_seed);
 
     commands.insert_resource(GameGrid { tiles: grid_tiles });
     commands.insert_resource(SpatialGrid::default());
     commands.insert_resource(TickCount::default());
     commands.insert_resource(PopulationCount::default());
     commands.insert_resource(BandCenter(Position { x: 0, y: 0 }));
+    commands.insert_resource(WorldSeed(world_seed));
 
     // --- Spawning Initial Entities ---
     // Spawn Creatures
@@ -56,6 +62,7 @@ pub fn setup_system(mut commands: Commands) {
 pub fn setup_visualization_system(
     mut commands: Commands,
     grid: Res<GameGrid>,
+    world_seed: Res<WorldSeed>,
 ) {
     // --- Draw the Grid ---
     // We spawn a sprite for each tile only once
@@ -68,6 +75,12 @@ pub fn setup_visualization_system(
                     } else {
                         (Color::srgb(0.5, 0.5, 0.5), default())
                     }
+                }
+                TileKind::Dirt => {
+                    (Color::srgb(0.5, 0.5, 0.5), default())
+                }
+                TileKind::Water => {
+                    (Color::srgb(0.0, 0.0, 1.0), default())
                 }
             };
 
@@ -110,4 +123,34 @@ pub fn setup_visualization_system(
             ..default()
         },
     ));
-} 
+    info!("World seed: {}", world_seed.0);
+}
+
+// --- Helper Functions ---
+
+fn generate_seed() -> u32 {
+    let mut rng = Pcg32::new(
+        rand::rng().random_range(0..u64::MAX),
+        rand::rng().random_range(0..u64::MAX),
+    );
+    rng.random_range(0..u32::MAX)
+}
+
+fn generate_height_map(seed: u32) -> Vec<Vec<Tile>> {
+    let perlin = Perlin::new(seed);
+    let mut map = vec![vec![Tile { kind: TileKind::Empty }; GRID_WIDTH]; GRID_HEIGHT];
+    for y in 0..GRID_HEIGHT {
+        for x in 0..GRID_WIDTH {
+            let nx = x as f64 * SCALE;
+            let ny = y as f64 * SCALE;
+            let raw_height = perlin.get([nx, ny]); // Value in [-1, 1]
+            let height = ((raw_height + 1.0) / 2.0) as f32; // Normalize to [0,1]
+            if height < WATER_LEVEL {
+                map[y][x] = Tile { kind: TileKind::Water };
+            } else {
+                map[y][x] = Tile { kind: TileKind::Dirt };
+            }
+        }
+    }
+    map
+}
