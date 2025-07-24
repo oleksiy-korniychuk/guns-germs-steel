@@ -8,6 +8,7 @@ use crate::constants::*;
 use crate::resources::{
     game_grid::SpatialGrid,
     camera_zoom::CameraZoom,
+    camera_position::CameraPosition,
 };
 use crate::components::components::*;
 
@@ -60,6 +61,46 @@ pub fn camera_zoom_system(
                 scale: camera_zoom.0,
                 ..OrthographicProjection::default_2d()
             }));
+        }
+    }
+}
+
+pub fn camera_pan_system(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut camera_position: ResMut<CameraPosition>,
+    camera_query: Query<Entity, With<Camera2d>>,
+    time: Res<Time>,
+    camera_zoom: Res<CameraZoom>,
+) {
+    let mut pan_direction = Vec2::ZERO;
+    
+    if keys.pressed(KeyCode::KeyW) {
+        pan_direction.y += 1.0;
+    }
+    if keys.pressed(KeyCode::KeyA) {
+        pan_direction.x -= 1.0;
+    }
+    if keys.pressed(KeyCode::KeyS) {
+        pan_direction.y -= 1.0;
+    }
+    if keys.pressed(KeyCode::KeyD) {
+        pan_direction.x += 1.0;
+    }
+    
+    if pan_direction != Vec2::ZERO {
+        // Normalize the direction to prevent faster diagonal movement
+        pan_direction = pan_direction.normalize();
+        
+        // Scale pan speed by zoom level so panning feels consistent
+        let pan_speed = CAMERA_PAN_SPEED * camera_zoom.0 * time.delta_secs();
+        camera_position.0 += pan_direction * pan_speed;
+        
+        // Apply the new position to the camera
+        if let Ok(camera_entity) = camera_query.single() {
+            commands.entity(camera_entity).insert(Transform::from_translation(
+                camera_position.0.extend(0.0)
+            ));
         }
     }
 }

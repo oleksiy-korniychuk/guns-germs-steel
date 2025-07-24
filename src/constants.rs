@@ -13,6 +13,7 @@ pub const DEFAULT_ZOOM: f32 = 1.0;
 pub const MIN_ZOOM: f32 = 0.1;
 pub const MAX_ZOOM: f32 = 5.0;
 pub const ZOOM_SPEED: f32 = 0.1;
+pub const CAMERA_PAN_SPEED: f32 = 400.0;
 
 // --- World Constants ---
 pub const WATER_LEVEL: f32 = 0.4; // Tiles below this are lakes

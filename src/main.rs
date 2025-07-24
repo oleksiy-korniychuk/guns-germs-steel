@@ -9,6 +9,7 @@ mod constants;
 use resources::{
     game_state::GameState,
     camera_zoom::CameraZoom,
+    camera_position::CameraPosition,
 };
 use systems::{
     ux::*,
@@ -35,6 +36,7 @@ fn main() {
         }))
         .init_state::<GameState>()
         .init_resource::<CameraZoom>()
+        .init_resource::<CameraPosition>()
         .add_systems(
             Startup, 
             (
@@ -73,6 +75,7 @@ fn main() {
                     toggle_pause_system,
                     exit_on_escape_system,
                     camera_zoom_system,
+                    camera_pan_system,
                     spawn_creature_visuals_system,
                     spawn_plant_visuals_system,
                     update_creature_color_system,
