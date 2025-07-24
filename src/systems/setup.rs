@@ -22,10 +22,10 @@ use crate::components::components::*;
 pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
     commands.spawn((
         Camera2d::default(),
-        OrthographicProjection {
+        Projection::from(OrthographicProjection {
             scale: camera_zoom.0,
-            ..default()
-        },
+            ..OrthographicProjection::default_2d()
+        }),
     ));
 
     // --- Resource Setup ---

@@ -1,18 +1,10 @@
 [package]
 name = "guns-germs-steel"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-bevy = { version = "0.15.0", default-features = false, features = [
-    "bevy_winit",
-    "bevy_render", 
-    "bevy_core_pipeline",
-    "bevy_sprite",
-    "bevy_text",
-    "bevy_ui",
-    "png"
-] }
+bevy = "0.16.0"
 rand = "0.9.1"
 noise = "0.9.0"
 rand_pcg = "0.9.0"

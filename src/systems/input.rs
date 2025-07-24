@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use bevy::input::mouse::MouseScrollUnit;
+use bevy::input::mouse::{
+    MouseScrollUnit,
+    MouseWheel,
+};
 
 use crate::constants::*;
 use crate::resources::{
@@ -37,9 +40,10 @@ pub fn cursor_click_system(
 }
 
 pub fn camera_zoom_system(
+    mut commands: Commands,
     mut scroll_evr: EventReader<MouseWheel>,
     mut camera_zoom: ResMut<CameraZoom>,
-    mut camera_query: Query<&mut OrthographicProjection, With<Camera2d>>,
+    camera_query: Query<Entity, With<Camera2d>>,
 ) {
     for ev in scroll_evr.read() {
         let zoom_delta = match ev.unit {
@@ -51,8 +55,11 @@ pub fn camera_zoom_system(
         camera_zoom.0 = (camera_zoom.0 - zoom_delta).clamp(MIN_ZOOM, MAX_ZOOM);
         
         // Apply zoom to camera
-        if let Ok(mut projection) = camera_query.single_mut() {
-            projection.scale = camera_zoom.0;
+        if let Ok(camera_entity) = camera_query.single() {
+            commands.entity(camera_entity).insert(Projection::from(OrthographicProjection {
+                scale: camera_zoom.0,
+                ..OrthographicProjection::default_2d()
+            }));
         }
     }
 }
