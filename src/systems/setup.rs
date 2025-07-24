@@ -15,11 +15,18 @@ use crate::resources::{
     tick_count::TickCount,
     population_count::PopulationCount,
     seed::WorldSeed,
+    camera_zoom::CameraZoom,
 };
 use crate::components::components::*;
 
-pub fn setup_system(mut commands: Commands) {
-    commands.spawn(Camera2d::default());
+pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
+    commands.spawn((
+        Camera2d::default(),
+        Projection::from(OrthographicProjection {
+            scale: camera_zoom.0,
+            ..OrthographicProjection::default_2d()
+        }),
+    ));
 
     // --- Resource Setup ---
     let mut rng = rand::rng();
