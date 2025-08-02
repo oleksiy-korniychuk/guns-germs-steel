@@ -47,6 +47,7 @@ fn main() {
         .add_systems(
             FixedUpdate, // System run every tick
             (
+                update_band_center_system,
                 // Intent-Driven Systems
                 goal_selection_system,      // Brain: assigns intents (WantsTo*)
                 idle_goal_selection_system,   // Convert WantsToIdle to actions
@@ -58,7 +59,6 @@ fn main() {
                 procreation_system,        // Execute procreation actions
                 check_if_returned_to_band_system, // Remove OutsideBandRadius if returned to band
                 // Core systems
-                update_band_center_system,
                 pregnancy_system,
                 calorie_burn_system,
                 death_system,
@@ -81,6 +81,8 @@ fn main() {
                     update_creature_color_system,
                     update_creature_position_visuals_system,
                     update_population_text_system,
+                    path_visualization_system,
+                    cleanup_path_visualization_system,
                     update_tick_text_system,
                     cursor_click_system.run_if(input_just_pressed(MouseButton::Left))
                 ),

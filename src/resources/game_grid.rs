@@ -17,6 +17,7 @@ pub enum TileKind {
 #[derive(Clone, Copy, Debug)]
 pub struct Tile {
     pub kind: TileKind,
+    pub move_cost: i32,
 }
 
 #[derive(Resource, Default)]

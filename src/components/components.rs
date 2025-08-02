@@ -87,6 +87,15 @@ pub struct PopulationText;
 #[derive(Component)]
 pub struct BandCenterMarker;
 
+#[derive(Component)]
+pub struct PathVisualizationEnabled;
+
+#[derive(Component, Debug)]
+pub struct PathMarker {
+    pub creature_entity: Entity,
+    pub step_index: usize,
+}
+
 // --- Enums ---
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PlantType {

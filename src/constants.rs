@@ -17,19 +17,19 @@ pub const CAMERA_PAN_SPEED: f32 = 400.0;
 // --- World Constants ---
 pub const WATER_LEVEL: f32 = 0.4; // Tiles below this are lakes
 pub const SCALE: f64 = 0.07;      // Controls how zoomed in/out the noise is
-pub const STARTING_GRASS_COUNT: i32 = 100;
+pub const STARTING_GRASS_COUNT: i32 = 200;
 
 // --- Creature Constants ---
-pub const MOVE_COST: i32 = 1;
-pub const LIVE_COST: i32 = 2;
-pub const WORK_COST: i32 = 2;
-pub const PREGNANT_COST: i32 = 100;
-pub const HUMAN_MAX_CALORIES: i32 = 250;
+pub const MOVE_COST: i32 = 2;
+pub const LIVE_COST: i32 = 1;
+pub const WORK_COST: i32 = 20;
+pub const PREGNANT_COST: i32 = 1000;
+pub const HUMAN_MAX_CALORIES: i32 = 2500;
 pub const HUMAN_PREGNANCY_DURATION: u32 = 75;
 pub const BAND_RADIUS: i32 = 10;
 
 // --- Plant Constants ---
-pub const WHEAT_NUTRIENTS: i32 = 100;
+pub const WHEAT_NUTRIENTS: i32 = 1000;
 
 
 // --- Visual Constants ---

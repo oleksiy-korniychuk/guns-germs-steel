@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::input::mouse::{
     MouseScrollUnit,
     MouseWheel,
+    MouseButton,
 };
 
 use crate::constants::*;
@@ -14,12 +15,20 @@ use crate::components::components::*;
 
 
 pub fn cursor_click_system(
+    mut commands: Commands,
     windows: Query<&Window>,
     cameras: Query<(&Camera, &GlobalTransform)>,
-    creature_query: Query<(&Position, &Calories), With<CreatureMarker>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    creature_query: Query<(Entity, &Position, &Calories), With<CreatureMarker>>,
     plant_query: Query<(&Position, &FoodSource, &PlantMarker)>,
+    path_viz_query: Query<(), With<PathVisualizationEnabled>>,
     grid: Res<SpatialGrid>,
 ) {
+    // Only handle left mouse button clicks
+    if !mouse_input.just_pressed(MouseButton::Left) {
+        return;
+    }
+
     if let Some(world_position) = cast_cursor_position(windows, cameras) {
         let tile_x = (world_position.x / TILE_SIZE).floor() + GRID_WIDTH as f32 / 2.0;
         let tile_y = (world_position.y / TILE_SIZE).floor() + GRID_HEIGHT as f32 / 2.0;
@@ -28,15 +37,28 @@ pub fn cursor_click_system(
 
         if let Some(entities) = grid.0.get(&position) {
             for entity in entities.iter() {
-                if let Ok((position, calories)) = creature_query.get(*entity) {
-                    info!("Entity: {:?}, Position: {:?}, Calories: {:?}", entity, position, calories);
+                // Handle creature clicks - toggle path visualization
+                if let Ok((creature_entity, position, calories)) = creature_query.get(*entity) {
+                    info!("Clicked creature - Entity: {:?}, Position: {:?}, Calories: {:?}", creature_entity, position, calories);
+                    
+                    // Toggle path visualization for this creature
+                    if path_viz_query.get(creature_entity).is_ok() {
+                        // Remove path visualization
+                        commands.entity(creature_entity).remove::<PathVisualizationEnabled>();
+                        info!("Disabled path visualization for creature {:?}", creature_entity);
+                    } else {
+                        // Add path visualization
+                        commands.entity(creature_entity).insert(PathVisualizationEnabled);
+                        info!("Enabled path visualization for creature {:?}", creature_entity);
+                    }
                 }
+                
+                // Still log plant info for debugging
                 if let Ok((position, food_source, plant_marker)) = plant_query.get(*entity) {
-                    info!("Entity: {:?}, Position: {:?}, Nutrition: {:?}, PlantType: {:?}", entity, position, food_source.nutrition_value, plant_marker.plant_type);
+                    info!("Clicked plant - Entity: {:?}, Position: {:?}, Nutrition: {:?}, PlantType: {:?}", entity, position, food_source.nutrition_value, plant_marker.plant_type);
                 }
             }
         }
-
     }
 }
 

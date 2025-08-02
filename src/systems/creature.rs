@@ -4,11 +4,14 @@ use crate::components::components::*;
 use crate::resources::{
     game_grid::{
         SpatialGrid,
+        GameGrid,
+        TileKind,
     },
     band_center::BandCenter,
 };
 use crate::constants::*;
 use std::collections::HashSet;
+use pathfinding::prelude::astar;
 
 
 // --- Intent-Driven Systems ---
@@ -212,30 +215,39 @@ pub fn pregnancy_system(
     }
 }
 
-// Simple pathfinding system that only calculates the next step (For now)
+// A* pathfinding system that calculates optimal paths using the game grid
 pub fn pathfinding_system(
     mut commands: Commands,
     query: Query<(Entity, &Position, &ActionTravelTo), Without<ActivePath>>,
+    game_grid: Res<GameGrid>,
 ) {
     for (entity, current_pos, travel_action) in query.iter() {
         let destination = travel_action.destination;
         
         if *current_pos == destination {
-            // Reached destination, remove ActionTravelTo
             commands.entity(entity).remove::<ActionTravelTo>();
         } else {
-            // Not at destination yet, calculate next step and keep ActionTravelTo
-            let mut next_pos = *current_pos;
-            let dx = destination.x - current_pos.x;
-            let dy = destination.y - current_pos.y;
-
-            if dx.abs() > dy.abs() {
-                next_pos.x += dx.signum();
+            // Calculate A* path from current position to destination
+            if let Some(path) = calculate_astar_path(*current_pos, destination, &game_grid) {
+                // Remove the first position (current position) from the path
+                let mut nodes = path;
+                if !nodes.is_empty() && nodes[0] == *current_pos {
+                    nodes.remove(0);
+                }
+                
+                // If we have valid moves, create ActivePath
+                if !nodes.is_empty() {
+                    commands.entity(entity).insert(ActivePath { nodes });
+                } else {
+                    // Already at destination
+                    commands.entity(entity).remove::<ActionTravelTo>();
+                }
             } else {
-                next_pos.y += dy.signum();
+                // No path found, remove travel intent
+                // This could happen if destination is unreachable (surrounded by water, etc.)
+                commands.entity(entity).remove::<ActionTravelTo>();
+                warn!("No path found from {:?} to {:?}", current_pos, destination);
             }
-            
-            commands.entity(entity).insert(ActivePath { nodes: vec![next_pos] });
         }
     }
 }
@@ -284,6 +296,64 @@ pub fn update_band_center_system(
 }
 
 // --- Helper Functions ---
+
+// A* pathfinding function that uses the game grid for tile costs
+fn calculate_astar_path(
+    start: Position,
+    end: Position,
+    game_grid: &GameGrid,
+) -> Option<Vec<Position>> {
+    let result = astar(
+        &start,
+        |p| {
+            // Generate all possible neighbors (4-directional movement)
+            let neighbors = vec![
+                Position { x: p.x + 1, y: p.y },
+                Position { x: p.x - 1, y: p.y },
+                Position { x: p.x, y: p.y + 1 },
+                Position { x: p.x, y: p.y - 1 },
+            ];
+
+            neighbors.into_iter()
+                .filter_map(|neighbor_pos| {
+                    // Check if position is within bounds
+                    if neighbor_pos.x < 0 || neighbor_pos.x >= GRID_WIDTH as i32 ||
+                       neighbor_pos.y < 0 || neighbor_pos.y >= GRID_HEIGHT as i32 {
+                        return None;
+                    }
+
+                    // Get the tile at this position
+                    let tile = &game_grid.tiles[neighbor_pos.y as usize][neighbor_pos.x as usize];
+                    
+                    // Calculate cost based on tile type and move_cost
+                    let cost = match tile.kind {
+                        TileKind::Empty => 10,  // Standard cost for empty tiles
+                        TileKind::Dirt => tile.move_cost as u32,  // Use tile's move_cost
+                        TileKind::Water => {
+                            // Water is very expensive to traverse (simulating need for boats/swimming)
+                            tile.move_cost as u32 * 10
+                        }
+                    };
+
+                    // If cost is reasonable, include this neighbor
+                    if cost <= 1000 {  // Prevent unreasonably high costs
+                        Some((neighbor_pos, cost))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        },
+        |p| {
+            // Manhattan distance heuristic
+            ((p.x - end.x).abs() + (p.y - end.y).abs()) as u32
+        },
+        |p| *p == end  // Success condition
+    );
+
+    // Extract just the path from the result
+    result.map(|(path, _cost)| path)
+}
 
 // Optimized search function using a spatial grid.
 fn find_closest_available_food(

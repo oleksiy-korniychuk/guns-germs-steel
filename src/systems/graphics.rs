@@ -96,6 +96,59 @@ pub fn update_creature_color_system(mut query: Query<(&mut Sprite, &Calories), W
     }
 }
 
+// Path visualization system - creates visual markers for active paths
+pub fn path_visualization_system(
+    mut commands: Commands,
+    creature_query: Query<(Entity, &ActivePath), (With<CreatureMarker>, With<PathVisualizationEnabled>)>,
+    existing_path_markers: Query<Entity, With<PathMarker>>,
+) {
+    // Clean up existing path markers first
+    for marker_entity in existing_path_markers.iter() {
+        commands.entity(marker_entity).despawn();
+    }
+    
+    // Create new path markers for creatures with visualization enabled
+    for (creature_entity, active_path) in creature_query.iter() {
+        for (index, &path_node) in active_path.nodes.iter().enumerate() {
+            // Calculate world position from grid position
+            let world_x = (path_node.x as f32 - GRID_WIDTH as f32 / 2.0) * TILE_SIZE;
+            let world_y = (path_node.y as f32 - GRID_HEIGHT as f32 / 2.0) * TILE_SIZE;
+            
+            // Create a visual marker for this path node
+            commands.spawn((
+                Sprite {
+                    color: if index == 0 { 
+                        Color::srgb(1.0, 1.0, 0.0) // Yellow for next step
+                    } else { 
+                        Color::srgb(0.0, 1.0, 1.0) // Cyan for future steps
+                    },
+                    custom_size: Some(Vec2::new(TILE_SIZE * 0.3, TILE_SIZE * 0.3)),
+                    ..default()
+                },
+                Transform::from_xyz(world_x + TILE_SIZE/2.0, world_y + TILE_SIZE/2.0, 3.0),
+                PathMarker {
+                    creature_entity,
+                    step_index: index,
+                },
+            ));
+        }
+    }
+}
+
+// Cleanup system to remove path visualization when creatures die or lose ActivePath
+pub fn cleanup_path_visualization_system(
+    mut commands: Commands,
+    path_markers: Query<(Entity, &PathMarker)>,
+    creatures_with_paths: Query<(), (With<CreatureMarker>, With<ActivePath>, With<PathVisualizationEnabled>)>,
+) {
+    for (marker_entity, path_marker) in path_markers.iter() {
+        // If the creature no longer exists or doesn't have the required components, remove the marker
+        if creatures_with_paths.get(path_marker.creature_entity).is_err() {
+            commands.entity(marker_entity).despawn();
+        }
+    }
+}
+
 pub fn update_tick_text_system(
     tick_count: Res<TickCount>,
     mut query: Query<&mut Text, With<TickText>>,
