@@ -15,9 +15,9 @@ pub const ZOOM_SPEED: f32 = 0.1;
 pub const CAMERA_PAN_SPEED: f32 = 400.0;
 
 // --- World Constants ---
-pub const WATER_LEVEL: f32 = 0.4; // Tiles below this are lakes
-pub const SCALE: f64 = 0.07;      // Controls how zoomed in/out the noise is
-pub const STARTING_GRASS_COUNT: i32 = 200;
+pub const WATER_LEVEL: f32 = 0.3; // Tiles below this are lakes
+pub const SCALE: f64 = 0.02;      // Controls how zoomed in/out the noise is
+pub const STARTING_GRASS_COUNT: i32 = 5000;
 
 // --- Creature Constants ---
 pub const MOVE_COST: i32 = 2;
