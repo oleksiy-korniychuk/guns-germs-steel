@@ -62,7 +62,7 @@ fn main() {
                 pregnancy_system,
                 calorie_burn_system,
                 death_system,
-                plant_propogation_system,
+                //plant_propogation_system, // TODO: Remove when not needed
                 population_counter_system,
                 tick_counter_system,
             ).chain().run_if(in_state(GameState::Running)),

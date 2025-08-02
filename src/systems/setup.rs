@@ -35,13 +35,6 @@ pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
     // Find dirt tiles near map center for creatures
     let creature_positions = find_dirt_near_center(&grid_tiles);
 
-    commands.insert_resource(GameGrid { tiles: grid_tiles });
-    commands.insert_resource(SpatialGrid::default());
-    commands.insert_resource(TickCount::default());
-    commands.insert_resource(PopulationCount::default());
-    commands.insert_resource(BandCenter(Position { x: 0, y: 0 }));
-    commands.insert_resource(WorldSeed(world_seed));
-
     // --- Spawning Initial Entities ---
     // Spawn Creatures
     commands.spawn((
@@ -59,14 +52,23 @@ pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
     for _ in 0..STARTING_GRASS_COUNT {
         let x = rng.random_range(0..GRID_WIDTH);
         let y = rng.random_range(0..GRID_HEIGHT);
-        commands.spawn((
-            PlantMarker { plant_type: PlantType::Wheat },
-            Position { x: x as i32, y: y as i32 },
-            FoodSource { nutrition_value: WHEAT_NUTRIENTS },
-            Harvestable,
-            Edible,
-        ));
+        if grid_tiles[y][x].kind == TileKind::Dirt {
+            commands.spawn((
+                PlantMarker { plant_type: PlantType::Wheat },
+                Position { x: x as i32, y: y as i32 },
+                FoodSource { nutrition_value: WHEAT_NUTRIENTS },
+                Harvestable,
+                Edible,
+            ));
+        }
     }
+
+    commands.insert_resource(GameGrid { tiles: grid_tiles });
+    commands.insert_resource(SpatialGrid::default());
+    commands.insert_resource(TickCount::default());
+    commands.insert_resource(PopulationCount::default());
+    commands.insert_resource(BandCenter(Position { x: 0, y: 0 }));
+    commands.insert_resource(WorldSeed(world_seed));
 }
 
 pub fn setup_visualization_system(
