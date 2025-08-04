@@ -29,7 +29,6 @@ pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
     ));
 
     // --- Resource Setup ---
-    let mut rng = rand::rng();
     let world_seed = generate_seed();
     let grid_tiles = generate_height_map(world_seed);
     // Find dirt tiles near map center for creatures
@@ -48,20 +47,8 @@ pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
         Calories { current: HUMAN_MAX_CALORIES, max: HUMAN_MAX_CALORIES },
     ));
 
-    // Spawn Plants
-    for _ in 0..STARTING_GRASS_COUNT {
-        let x = rng.random_range(0..GRID_WIDTH);
-        let y = rng.random_range(0..GRID_HEIGHT);
-        if grid_tiles[y][x].kind == TileKind::Dirt {
-            commands.spawn((
-                PlantMarker { plant_type: PlantType::Wheat },
-                Position { x: x as i32, y: y as i32 },
-                FoodSource { nutrition_value: WHEAT_NUTRIENTS },
-                Harvestable,
-                Edible,
-            ));
-        }
-    }
+    // Spawn Plants using noise-based wheat generation
+    generate_wheat_patches(&mut commands, &grid_tiles, world_seed);
 
     commands.insert_resource(GameGrid { tiles: grid_tiles });
     commands.insert_resource(SpatialGrid::default());
@@ -194,5 +181,34 @@ fn find_dirt_near_center(grid: &Vec<Vec<Tile>>) -> (Position, Position) {
         0 => (Position { x: 0, y: 0 }, Position { x: 0, y: 0 }),
         1 => (dirt_positions[0], dirt_positions[0]),
         _ => (dirt_positions[0], dirt_positions[1]),
+    }
+}
+
+fn generate_wheat_patches(commands: &mut Commands, grid_tiles: &Vec<Vec<Tile>>, world_seed: u32) {
+    // Use a different seed offset for wheat generation to create different patterns
+    let wheat_seed = world_seed.wrapping_add(12345);
+    let wheat_noise = Perlin::new(wheat_seed);
+    
+    for y in 0..GRID_HEIGHT {
+        for x in 0..GRID_WIDTH {
+            // Only place wheat on dirt tiles
+            if grid_tiles[y][x].kind == TileKind::Dirt {
+                let nx = x as f64 * WHEAT_SCALE;
+                let ny = y as f64 * WHEAT_SCALE;
+                let wheat_noise_value = wheat_noise.get([nx, ny]); // Value in [-1, 1]
+                let normalized_wheat = ((wheat_noise_value + 1.0) / 2.0) as f32; // Normalize to [0,1]
+                
+                // Primary wheat patch determination
+                if normalized_wheat > WHEAT_THRESHOLD {
+                    commands.spawn((
+                        PlantMarker { plant_type: PlantType::Wheat },
+                        Position { x: x as i32, y: y as i32 },
+                        FoodSource { nutrition_value: WHEAT_NUTRIENTS },
+                        Harvestable,
+                        Edible,
+                    ));
+                }
+            }
+        }
     }
 }

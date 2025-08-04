@@ -127,8 +127,7 @@ pub fn path_visualization_system(
                 },
                 Transform::from_xyz(world_x + TILE_SIZE/2.0, world_y + TILE_SIZE/2.0, 3.0),
                 PathMarker {
-                    creature_entity,
-                    step_index: index,
+                    creature_entity
                 },
             ));
         }

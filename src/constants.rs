@@ -17,7 +17,8 @@ pub const CAMERA_PAN_SPEED: f32 = 400.0;
 // --- World Constants ---
 pub const WATER_LEVEL: f32 = 0.3; // Tiles below this are lakes
 pub const SCALE: f64 = 0.02;      // Controls how zoomed in/out the noise is
-pub const STARTING_GRASS_COUNT: i32 = 5000;
+pub const WHEAT_SCALE: f64 = 0.07; // Controls wheat patch size - smaller = larger patches
+pub const WHEAT_THRESHOLD: f32 = 0.7; // Noise value above which wheat spawns
 
 // --- Creature Constants ---
 pub const MOVE_COST: i32 = 2;

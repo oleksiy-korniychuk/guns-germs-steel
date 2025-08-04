@@ -92,8 +92,7 @@ pub struct PathVisualizationEnabled;
 
 #[derive(Component, Debug)]
 pub struct PathMarker {
-    pub creature_entity: Entity,
-    pub step_index: usize,
+    pub creature_entity: Entity
 }
 
 // --- Enums ---
