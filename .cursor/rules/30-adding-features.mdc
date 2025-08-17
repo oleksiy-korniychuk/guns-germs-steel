@@ -1,0 +1,35 @@
+---
+description: How to add components, resources, systems, visuals, and constants in this project
+---
+### Adding Features
+
+- **New component**:
+  - Define in [src/components/components.rs](mdc:src/components/components.rs)
+  - Re-export via [src/components/mod.rs](mdc:src/components/mod.rs)
+  - Prefer marker components for flags and separate action/intent components (matches existing pattern)
+
+- **New resource**:
+  - Create in `src/resources/your_resource.rs` and export in [src/resources/mod.rs](mdc:src/resources/mod.rs)
+  - Initialize in Startup (e.g., [src/systems/setup.rs](mdc:src/systems/setup.rs)) or via `.init_resource::<T>()` in [src/main.rs](mdc:src/main.rs) if `Default`
+
+- **New system**:
+  - Place alongside related systems in `src/systems/*.rs` and export in [src/systems/mod.rs](mdc:src/systems/mod.rs)
+  - Register in [src/main.rs](mdc:src/main.rs) under the appropriate schedule (`Startup`/`FixedUpdate`/`Update`), preserving intended order with `.chain()`
+  - Use `With<>`/`Without<>` to avoid conflicts and follow existing intent→action→execution flow
+
+- **Visuals/UI**:
+  - Spawn `Sprite` and `Transform` similarly to [src/systems/graphics.rs](mdc:src/systems/graphics.rs)
+  - Map `Position` to world coordinates using TILE_SIZE and centered origin
+  - Add UI via `Text`/`Node` as in [src/systems/setup.rs](mdc:src/systems/setup.rs)
+
+- **Grid/Pathfinding**:
+  - Read tiles and costs from [src/resources/game_grid.rs](mdc:src/resources/game_grid.rs)
+  - Use `SpatialGrid` for occupancy/nearby searches; it is refreshed each frame by `spatial_grid_system`
+
+- **Constants/tuning**:
+  - Add/change values in [src/constants.rs](mdc:src/constants.rs)
+  - Reference constants instead of literals inside systems
+
+### Documentation requirement
+- After adding or changing features/systems/resources/schedules, update `GameOverview.md` per [Maintaining GameOverview](mdc:.cursor/rules/50-maintaining-game-overview.mdc).
+

@@ -1,0 +1,22 @@
+---
+description: Bevy schedules, app state, and where systems run in this repo
+---
+### Schedules and State
+
+- App/state setup in [src/main.rs](mdc:src/main.rs)
+  - Initializes `GameState`, `CameraZoom`, `CameraPosition`
+  - Fixed timestep set via `Time::<Fixed>::from_hz(TICK_RATE_HZ)` from [src/constants.rs](mdc:src/constants.rs)
+
+- Startup (ordered via `.chain()`):
+  - `setup_system`, `setup_visualization_system` in [src/systems/setup.rs](mdc:src/systems/setup.rs)
+
+- FixedUpdate (ordered via `.chain()`; gated by `in_state(GameState::Running)`):
+  - Band center update → goal selection/idle → find food → A* pathfinding → return-to-band → perform movement/eat → procreation → pregnancy → calorie burn → death → counters
+  - Systems live in [src/systems/creature.rs](mdc:src/systems/creature.rs) and [src/systems/gameplay.rs](mdc:src/systems/gameplay.rs)
+
+- Update (per frame; `.chain()`):
+  - `spatial_grid_system` then input/camera/visual updates, path viz maintenance, and UI text updates in [src/systems/input.rs](mdc:src/systems/input.rs) and [src/systems/graphics.rs](mdc:src/systems/graphics.rs)
+  - Cursor click is gated with `input_just_pressed(MouseButton::Left)` in [src/main.rs](mdc:src/main.rs)
+
+- States defined in [src/resources/game_state.rs](mdc:src/resources/game_state.rs)
+

@@ -1,0 +1,25 @@
+---
+description: Keep GameOverview.md accurate when features are added or core functionality changes
+---
+
+### Maintain GameOverview.md
+
+Purpose: Ensure `GameOverview.md` stays in sync with the codebase.
+
+If a diagram changes, update the corresponding Mermaid block in `GameOverview.md`. Prefer precise node names matching system/function names.
+
+#### How to update quickly
+1) Revise or add bullets; keep language concise
+2) Update Mermaid nodes/edges; ensure names match code (e.g., `goal_selection_system`)
+3) Save and preview rendering; fix any Mermaid syntax issues
+
+#### Style guidelines
+- Keep it concise and task‑oriented; avoid internal implementation detail unless crucial
+- Prefer lists and small diagrams over long prose
+
+#### Reviewer checklist
+- [ ] Do diagrams and text match the actual order in `src/main.rs`?
+- [ ] Are new systems/components/resources reflected?
+- [ ] Are input/camera or UI changes captured?
+- [ ] Does the wording help a newcomer understand “what it does” and “where it lives”?
+

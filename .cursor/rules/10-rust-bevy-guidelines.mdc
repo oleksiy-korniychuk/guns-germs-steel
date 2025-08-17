@@ -1,0 +1,15 @@
+---
+globs: *.rs
+---
+### Rust + Bevy Conventions (this repo)
+
+- **Imports**: Prefer `use bevy::prelude::*;` in systems/modules. Keep module-scoped imports explicit for crate items.
+- **Components/Resources**: Use `#[derive(Component)]` and `#[derive(Resource)]` where applicable. Place shared components in [src/components/components.rs](mdc:src/components/components.rs); resources in [src/resources](mdc:src/resources).
+- **System naming**: Suffix with `_system` and keep them stateless (inputs via `Query`, `Res`, `ResMut`).
+- **Scheduling**: Register systems in [src/main.rs](mdc:src/main.rs). Use `.chain()` for ordered execution where needed.
+- **Game state**: Use `in_state(GameState::Running)` for ticked logic; states defined in [src/resources/game_state.rs](mdc:src/resources/game_state.rs).
+- **Queries**: Use `With<>`/`Without<>` filters to avoid conflicting component sets (matches existing patterns in gameplay systems).
+- **Coordinates**: Grid `Position` maps to world `Transform` with TILE_SIZE and centered origin; see examples in [src/systems/graphics.rs](mdc:src/systems/graphics.rs).
+- **Constants**: Add/adjust tunables in [src/constants.rs](mdc:src/constants.rs) and read from there (no magic numbers in systems).
+- **Style**: Early returns; shallow nesting; no unnecessary `clone`; prefer clear names for intent.
+

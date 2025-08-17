@@ -1,0 +1,15 @@
+---
+description: Sprite assets, coordinate conversions, and layering rules used here
+---
+### Assets and Visuals
+
+- **Assets root**: [assets/sprites](mdc:assets/sprites)
+- Example images: `human_v2.png`, `human_headband_v2.png`, `wheat.png`
+- **Coordinate mapping** (grid → world):
+  - `world_x = x * TILE_SIZE - (GRID_WIDTH * TILE_SIZE) / 2 + TILE_SIZE / 2`
+  - `world_y = y * TILE_SIZE - (GRID_HEIGHT * TILE_SIZE) / 2 + TILE_SIZE / 2`
+  - See usage in [src/systems/graphics.rs](mdc:src/systems/graphics.rs)
+- **Layering** (Z): tiles `0.0`, plants `1.0`, creatures `2.0`, path markers `3.0`, headband child `+0.1`
+- **Headband overlay**: spawned as child of creature entity; see `add_child` usage in [src/systems/graphics.rs](mdc:src/systems/graphics.rs)
+- **Path visualization**: optional per-creature markers controlled by `PathVisualizationEnabled`; created/cleaned in [src/systems/graphics.rs](mdc:src/systems/graphics.rs)
+

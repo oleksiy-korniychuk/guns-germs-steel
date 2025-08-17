@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+---
+### Project Structure Overview
+
+- **Entry point**: [src/main.rs](mdc:src/main.rs)
+- **Crate config**: [Cargo.toml](mdc:Cargo.toml)
+- **Constants**: [src/constants.rs](mdc:src/constants.rs)
+- **Components**: [src/components/components.rs](mdc:src/components/components.rs) re-exported by [src/components/mod.rs](mdc:src/components/mod.rs)
+- **Systems (ECS logic)**: exposed in [src/systems/mod.rs](mdc:src/systems/mod.rs)
+  - Gameplay/AI: [src/systems/creature.rs](mdc:src/systems/creature.rs), [src/systems/gameplay.rs](mdc:src/systems/gameplay.rs)
+  - Rendering/UX: [src/systems/graphics.rs](mdc:src/systems/graphics.rs), [src/systems/ux.rs](mdc:src/systems/ux.rs)
+  - Input/Camera: [src/systems/input.rs](mdc:src/systems/input.rs)
+  - Startup/world init: [src/systems/setup.rs](mdc:src/systems/setup.rs)
+- **Resources (global state)**: 
+  - Index: [src/resources/mod.rs](mdc:src/resources/mod.rs)
+  - World grid: [src/resources/game_grid.rs](mdc:src/resources/game_grid.rs)
+  - Game state: [src/resources/game_state.rs](mdc:src/resources/game_state.rs)
+  - Misc resources (tick/population/band/seed/camera): see files under [src/resources](mdc:src/resources)
+- **Assets**: sprites in [assets/sprites](mdc:assets/sprites)
+
+### Scheduling (where things run)
+
+- Startup: world/camera/UI init in [src/systems/setup.rs](mdc:src/systems/setup.rs)
+- FixedUpdate: simulation tick chain registered in [src/main.rs](mdc:src/main.rs)
+- Update: per-frame visuals/input chain in [src/main.rs](mdc:src/main.rs)
+
+### Key data types
+
+- `Position`, `Calories`, intents/actions, markers: [src/components/components.rs](mdc:src/components/components.rs)
+- Grid tiles and occupancy (`GameGrid`, `SpatialGrid`): [src/resources/game_grid.rs](mdc:src/resources/game_grid.rs)
+
