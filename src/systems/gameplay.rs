@@ -33,7 +33,7 @@ pub fn population_counter_system(
     population_count.0 = population as u32;
 }
 
-pub fn plant_propogation_system(
+pub fn plant_propagation_system(
     mut commands: Commands,
     plant_query: Query<(&Position, &PlantMarker)>,
     grid: Res<SpatialGrid>,
