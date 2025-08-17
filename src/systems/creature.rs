@@ -112,7 +112,7 @@ pub fn calorie_burn_system(mut query: Query<&mut Calories, With<CreatureMarker>>
 pub fn death_system(mut commands: Commands, query: Query<(Entity, &Calories)>) {
     for (entity, calories) in query.iter() {
         if calories.current <= 0 {
-            commands.entity(entity).despawn();
+            commands.entity(entity).despawn(); // now also takes care of despawn child entities
         }
     }
 }
@@ -273,6 +273,7 @@ pub fn check_if_returned_to_band_system(
         if !is_outside_band_radius(*pos, band_center.0) {
             commands.entity(entity).remove::<OutsideBandRadius>();
             commands.entity(entity).remove::<ActionTravelTo>();
+            commands.entity(entity).remove::<ActivePath>();
         }
     }
 }
