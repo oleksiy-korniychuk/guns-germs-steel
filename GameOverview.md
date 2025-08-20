@@ -168,7 +168,10 @@ flowchart LR
 - Optional path visualization: toggled per‑creature via click; markers are ephemeral and cleaned up
 
 ### 7) Input & camera
-- Input: Space toggles pause; Escape exits; Left click selects a tile and toggles path viz for creatures under cursor (also logs plant info)
+- Input: Space toggles pause; Escape exits; Left click selects a tile:
+  - Click on creature: toggles path visualization for that creature
+  - Click on empty tile: sets band center to manual mode at that position
+  - Manual band mode: creatures will return to the clicked position; automatically switches back to auto-calculated center when all creatures are within band radius
 - Camera zoom: mouse wheel adjusts `CameraZoom` clamped between `MIN_ZOOM` and a map‑fit max
 - Camera pan: WASD moves camera with bounds so the viewport never goes outside the map (unless map is smaller than viewport)
 

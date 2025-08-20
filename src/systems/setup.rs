@@ -11,7 +11,7 @@ use crate::resources::{
         Tile,
         SpatialGrid,
     },
-    band_center::BandCenter,
+    band_center::{BandCenter, BandCenterMode},
     ui_elements::{TickCount, PopulationCount},
     seed::WorldSeed,
     camera::CameraZoom,
@@ -54,6 +54,7 @@ pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
     commands.insert_resource(TickCount::default());
     commands.insert_resource(PopulationCount::default());
     commands.insert_resource(BandCenter(Position { x: 0, y: 0 }));
+    commands.insert_resource(BandCenterMode::Auto);
     commands.insert_resource(WorldSeed(world_seed));
 }
 

@@ -10,6 +10,7 @@ use crate::resources::{
     game_grid::SpatialGrid,
     camera::{CameraZoom, CameraPosition},
     ui_elements::BandCenterVisualizationEnabled,
+    band_center::{BandCenter, BandCenterMode},
 };
 use crate::components::components::*;
 
@@ -23,6 +24,8 @@ pub fn cursor_click_system(
     plant_query: Query<(&Position, &FoodSource, &PlantMarker)>,
     path_viz_query: Query<(), With<PathVisualizationEnabled>>,
     grid: Res<SpatialGrid>,
+    mut band_center: ResMut<BandCenter>,
+    mut band_center_mode: ResMut<BandCenterMode>,
 ) {
     // Only handle left mouse button clicks
     if !mouse_input.just_pressed(MouseButton::Left) {
@@ -35,28 +38,41 @@ pub fn cursor_click_system(
 
         let position = Position { x: tile_x as i32, y: tile_y as i32 };
 
-        if let Some(entities) = grid.0.get(&position) {
-            for entity in entities.iter() {
-                // Handle creature clicks - toggle path visualization
-                if let Ok((creature_entity, position, calories)) = creature_query.get(*entity) {
-                    info!("Clicked creature - Entity: {:?}, Position: {:?}, Calories: {:?}", creature_entity, position, calories);
+        // Check if we're clicking on valid grid coordinates
+        if position.x >= 0 && position.x < GRID_WIDTH as i32 && position.y >= 0 && position.y < GRID_HEIGHT as i32 {
+            let mut clicked_creature = false;
+            
+            if let Some(entities) = grid.0.get(&position) {
+                for entity in entities.iter() {
+                    // Handle creature clicks - toggle path visualization
+                    if let Ok((creature_entity, position, calories)) = creature_query.get(*entity) {
+                        clicked_creature = true;
+                        info!("Clicked creature - Entity: {:?}, Position: {:?}, Calories: {:?}", creature_entity, position, calories);
+                        
+                        // Toggle path visualization for this creature
+                        if path_viz_query.get(creature_entity).is_ok() {
+                            // Remove path visualization
+                            commands.entity(creature_entity).remove::<PathVisualizationEnabled>();
+                            info!("Disabled path visualization for creature {:?}", creature_entity);
+                        } else {
+                            // Add path visualization
+                            commands.entity(creature_entity).insert(PathVisualizationEnabled);
+                            info!("Enabled path visualization for creature {:?}", creature_entity);
+                        }
+                    }
                     
-                    // Toggle path visualization for this creature
-                    if path_viz_query.get(creature_entity).is_ok() {
-                        // Remove path visualization
-                        commands.entity(creature_entity).remove::<PathVisualizationEnabled>();
-                        info!("Disabled path visualization for creature {:?}", creature_entity);
-                    } else {
-                        // Add path visualization
-                        commands.entity(creature_entity).insert(PathVisualizationEnabled);
-                        info!("Enabled path visualization for creature {:?}", creature_entity);
+                    // Still log plant info for debugging
+                    if let Ok((position, food_source, plant_marker)) = plant_query.get(*entity) {
+                        info!("Clicked plant - Entity: {:?}, Position: {:?}, Nutrition: {:?}, PlantType: {:?}", entity, position, food_source.nutrition_value, plant_marker.plant_type);
                     }
                 }
-                
-                // Still log plant info for debugging
-                if let Ok((position, food_source, plant_marker)) = plant_query.get(*entity) {
-                    info!("Clicked plant - Entity: {:?}, Position: {:?}, Nutrition: {:?}, PlantType: {:?}", entity, position, food_source.nutrition_value, plant_marker.plant_type);
-                }
+            }
+            
+            // If we didn't click on a creature, set band center to manual mode at this position
+            if !clicked_creature {
+                *band_center_mode = BandCenterMode::Manual(position);
+                band_center.0 = position;
+                info!("Set band center to manual mode at position: {:?}", position);
             }
         }
     }

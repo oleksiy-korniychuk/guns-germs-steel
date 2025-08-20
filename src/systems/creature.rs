@@ -7,7 +7,7 @@ use crate::resources::{
         GameGrid,
         TileKind,
     },
-    band_center::BandCenter,
+    band_center::{BandCenter, BandCenterMode},
 };
 use crate::constants::*;
 use std::collections::HashSet;
@@ -61,6 +61,7 @@ pub fn perform_movement_system(
         
         if active_path.nodes.is_empty() {
             commands.entity(entity).remove::<ActivePath>();
+            commands.entity(entity).remove::<ActionTravelTo>();
         }
     }
 }
@@ -292,18 +293,30 @@ pub fn return_to_band_system(
     band_center: Res<BandCenter>,
 ) {
     for entity in creature_query.iter() {
-        commands.entity(entity).insert(OutsideBandRadius);
         commands.entity(entity).remove::<WantsToReturnToBand>();
+        commands.entity(entity).insert(OutsideBandRadius);
         commands.entity(entity).insert(ActionTravelTo { destination: band_center.0 });
     }
 }
 
 pub fn check_if_returned_to_band_system(
     mut commands: Commands,
-    creature_query: Query<(Entity, &Position), (With<CreatureMarker>, With<OutsideBandRadius>)>,
+    creature_query: Query<(Entity, &Position, Option<&ActionTravelTo>), (With<CreatureMarker>, With<OutsideBandRadius>)>,
     band_center: Res<BandCenter>,
 ) {
-    for (entity, pos) in creature_query.iter() {
+    for (entity, pos, action_travel_to) in creature_query.iter() {
+        if let Some(action_travel_to) = action_travel_to {
+            if action_travel_to.destination != band_center.0 {
+                commands.entity(entity).remove::<OutsideBandRadius>();
+                commands.entity(entity).remove::<ActionTravelTo>();
+                commands.entity(entity).remove::<ActivePath>();
+                commands.entity(entity).insert(WantsToReturnToBand);
+            }
+        } else {
+            commands.entity(entity).remove::<OutsideBandRadius>();
+            commands.entity(entity).insert(WantsToReturnToBand);
+        }
+
         if !is_outside_band_radius(*pos, band_center.0) {
             commands.entity(entity).remove::<OutsideBandRadius>();
             commands.entity(entity).remove::<ActionTravelTo>();
@@ -315,7 +328,13 @@ pub fn check_if_returned_to_band_system(
 pub fn update_band_center_system(
     creature_query: Query<&Position, With<CreatureMarker>>,
     mut band_center: ResMut<BandCenter>,
+    band_center_mode: Res<BandCenterMode>,
 ) {
+    // Only update band center automatically when in Auto mode
+    if !matches!(*band_center_mode, BandCenterMode::Auto) {
+        return;
+    }
+    
     if creature_query.is_empty() {
         return;
     }
@@ -328,6 +347,37 @@ pub fn update_band_center_system(
     new_band_center.x /= creature_query.iter().count() as i32;
     new_band_center.y /= creature_query.iter().count() as i32;
     band_center.0 = new_band_center;
+}
+
+pub fn check_manual_band_return_system(
+    creature_query: Query<&Position, With<CreatureMarker>>,
+    mut band_center: ResMut<BandCenter>,
+    mut band_center_mode: ResMut<BandCenterMode>,
+) {
+    // Only check when in Manual mode
+    if let BandCenterMode::Manual(manual_position) = *band_center_mode {
+        // Check if all creatures are within band radius of the manual position
+        let all_creatures_in_band = creature_query.iter().all(|pos| {
+            !is_outside_band_radius(*pos, manual_position)
+        });
+        
+        if all_creatures_in_band && !creature_query.is_empty() {
+            // Switch back to auto mode
+            *band_center_mode = BandCenterMode::Auto;
+            
+            // Immediately calculate the new auto band center
+            let mut new_band_center = Position { x: 0, y: 0 };
+            for pos in creature_query.iter() {
+                new_band_center.x += pos.x;
+                new_band_center.y += pos.y;
+            }
+            new_band_center.x /= creature_query.iter().count() as i32;
+            new_band_center.y /= creature_query.iter().count() as i32;
+            band_center.0 = new_band_center;
+            
+            info!("All creatures returned to manual band center. Switching back to auto mode.");
+        }
+    }
 }
 
 // --- Helper Functions ---

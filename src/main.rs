@@ -52,6 +52,7 @@ fn main() {
             FixedUpdate, // System run every tick
             (
                 update_band_center_system,
+                check_manual_band_return_system,
                 // Intent-Driven Systems
                 goal_selection_system,      // Brain: assigns intents (WantsTo*)
                 idle_goal_selection_system,   // Convert WantsToIdle to actions
