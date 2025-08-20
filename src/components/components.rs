@@ -51,6 +51,12 @@ pub struct ActivePath {
 }
 
 #[derive(Component, Debug)]
+pub struct RequiresAt {
+    pub position: Position,
+    pub radius: i32,
+}
+
+#[derive(Component, Debug)]
 pub struct OutsideBandRadius;
 
 // --- Markers ---

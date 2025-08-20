@@ -47,15 +47,18 @@ fn main() {
         .add_systems(
             FixedUpdate, // System run every tick
             (
+                // Events for navigation
                 update_band_center_system,
                 // Intent-Driven Systems
                 goal_selection_system,      // Brain: assigns intents (WantsTo*)
                 idle_goal_selection_system,   // Convert WantsToIdle to actions
                 find_food_system,          // Convert WantsToEat to actions  
+                action_preconditions_system, // Ensure navigation exists for action requirements
                 pathfinding_system,        // Convert ActionTravelTo to ActivePath
                 return_to_band_system,      // Convert WantsToReturnToBand to ActionTravelTo
                 perform_movement_system,    // Execute movement along ActivePath
                 perform_eat_system,        // Execute eating actions
+                action_failure_resolution_system, // React to nav failures
                 procreation_system,        // Execute procreation actions
                 check_if_returned_to_band_system, // Remove OutsideBandRadius if returned to band
                 // Core systems
@@ -67,6 +70,7 @@ fn main() {
                 tick_counter_system,
             ).chain().run_if(in_state(GameState::Running)),
         )
+        .add_event::<NavigationFailed>()
         .add_systems(
             Update, // System run every frame
             (

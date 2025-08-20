@@ -13,6 +13,9 @@ use crate::constants::*;
 use std::collections::HashSet;
 use pathfinding::prelude::astar;
 
+#[derive(Event)]
+pub struct NavigationFailed { pub entity: Entity, pub destination: Position }
+
 
 // --- Intent-Driven Systems ---
 pub fn goal_selection_system(
@@ -27,6 +30,7 @@ pub fn goal_selection_system(
         Without<ActionEat>,
         Without<ActivePath>,
         Without<OutsideBandRadius>,
+        Without<RequiresAt>,
     )>,
     pregnant_query: Query<(Entity, &mut Pregnant)>,
     band_center: Res<BandCenter>,
@@ -61,6 +65,8 @@ pub fn perform_movement_system(
         
         if active_path.nodes.is_empty() {
             commands.entity(entity).remove::<ActivePath>();
+            // If there is a positional requirement and no longer moving, clear travel intent
+            commands.entity(entity).remove::<ActionTravelTo>();
         }
     }
 }
@@ -79,7 +85,8 @@ pub fn perform_eat_system(
                 if plants_being_eaten.contains(&eat_action.target_entity) {
                     // Collision detected, reset this creature's intent
                     commands.entity(creature_entity)
-                        .remove::<ActionEat>();
+                        .remove::<ActionEat>()
+                        .remove::<RequiresAt>();
                     continue;
                 }
                 
@@ -92,13 +99,17 @@ pub fn perform_eat_system(
                 if eat_action.progress >= eat_action.max_progress {
                     creature_calories.current += plant_food.nutrition_value;
                     commands.entity(eat_action.target_entity).despawn();
-                    commands.entity(creature_entity).remove::<ActionEat>();
+                    commands.entity(creature_entity)
+                        .remove::<ActionEat>()
+                        .remove::<RequiresAt>();
                 }
             }
         } else {
             // Target doesn't exist anymore, reset to searching
             commands.entity(creature_entity)
-                .remove::<ActionEat>();
+                .remove::<ActionEat>()
+                .remove::<RequiresAt>()
+                .insert(WantsToEat);
         }
     }
 }
@@ -134,12 +145,12 @@ pub fn find_food_system(
                 
                 commands.entity(creature_entity)
                     .remove::<WantsToEat>()
-                    .insert(ActionTravelTo { destination: *food_pos })
                     .insert(ActionEat { 
                         target_entity: food_entity,
                         progress: 0,
                         max_progress: 3,
-                    });
+                    })
+                    .insert(RequiresAt { position: *food_pos, radius: 0 });
             }
         } else {
             commands.entity(creature_entity).remove::<WantsToEat>();
@@ -220,6 +231,7 @@ pub fn pathfinding_system(
     mut commands: Commands,
     query: Query<(Entity, &Position, &ActionTravelTo), Without<ActivePath>>,
     game_grid: Res<GameGrid>,
+    mut nav_failed: EventWriter<NavigationFailed>,
 ) {
     for (entity, current_pos, travel_action) in query.iter() {
         let destination = travel_action.destination;
@@ -243,9 +255,9 @@ pub fn pathfinding_system(
                     commands.entity(entity).remove::<ActionTravelTo>();
                 }
             } else {
-                // No path found, remove travel intent
-                // This could happen if destination is unreachable (surrounded by water, etc.)
+                // No path found, handle navigation failure without touching unrelated actions
                 commands.entity(entity).remove::<ActionTravelTo>();
+                nav_failed.write(NavigationFailed { entity, destination });
                 warn!("No path found from {:?} to {:?}", current_pos, destination);
             }
         }
@@ -266,14 +278,61 @@ pub fn return_to_band_system(
 
 pub fn check_if_returned_to_band_system(
     mut commands: Commands,
-    creature_query: Query<(Entity, &Position), (With<CreatureMarker>, With<OutsideBandRadius>)>,
+    creature_query: Query<(Entity, &Position, Option<&ActionEat>), (With<CreatureMarker>, With<OutsideBandRadius>)>,
     band_center: Res<BandCenter>,
 ) {
-    for (entity, pos) in creature_query.iter() {
+    for (entity, pos, maybe_eat) in creature_query.iter() {
         if !is_outside_band_radius(*pos, band_center.0) {
             commands.entity(entity).remove::<OutsideBandRadius>();
             commands.entity(entity).remove::<ActionTravelTo>();
             commands.entity(entity).remove::<ActivePath>();
+            // Clear positional requirements that were forcing a return
+            commands.entity(entity).remove::<RequiresAt>();
+            // If they were in the middle of eating, cancel and let planner re-assign
+            if maybe_eat.is_some() {
+                commands.entity(entity).remove::<ActionEat>().insert(WantsToEat);
+            }
+        }
+    }
+}
+
+// Ensures navigation exists for actions that require proximity
+pub fn action_preconditions_system(
+    mut commands: Commands,
+    query: Query<(Entity, &Position, &RequiresAt, Option<&ActionTravelTo>, Option<&ActivePath>)>,
+) {
+    for (entity, pos, req, maybe_travel, maybe_path) in query.iter() {
+        let distance = (pos.x - req.position.x).abs() + (pos.y - req.position.y).abs();
+        let at_target = distance <= req.radius;
+        if !at_target && maybe_travel.is_none() && maybe_path.is_none() {
+            commands.entity(entity).insert(ActionTravelTo { destination: req.position });
+        }
+        // Optional: if already at target but still has travel intent, clear it
+        if at_target && maybe_travel.is_some() {
+            commands.entity(entity).remove::<ActionTravelTo>();
+        }
+    }
+}
+
+// React to navigation failures and reset actions as needed
+pub fn action_failure_resolution_system(
+    mut commands: Commands,
+    mut nav_failed: EventReader<NavigationFailed>,
+    has_eat: Query<(), With<ActionEat>>,
+    has_requires: Query<(), With<RequiresAt>>,
+) {
+    for ev in nav_failed.read() {
+        let _destination = ev.destination; // access to avoid unused-field warning
+        let entity = ev.entity;
+        let eat_present = has_eat.get(entity).is_ok();
+        let req_present = has_requires.get(entity).is_ok();
+        if eat_present || req_present {
+            commands.entity(entity)
+                .remove::<ActionEat>()
+                .remove::<RequiresAt>()
+                .remove::<ActionTravelTo>()
+                .remove::<ActivePath>()
+                .insert(WantsToEat);
         }
     }
 }
