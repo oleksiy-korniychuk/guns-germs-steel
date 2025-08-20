@@ -3,6 +3,7 @@ globs: *.rs
 ---
 ### Rust + Bevy Conventions (this repo)
 
+- **Ideomatic Code**: Always use Bevy, ECS, and Rust best practices and always design and write ideomatic code.
 - **Imports**: Prefer `use bevy::prelude::*;` in systems/modules. Keep module-scoped imports explicit for crate items.
 - **Components/Resources**: Use `#[derive(Component)]` and `#[derive(Resource)]` where applicable. Place shared components in [src/components/components.rs](mdc:src/components/components.rs); resources in [src/resources](mdc:src/resources).
 - **System naming**: Suffix with `_system` and keep them stateless (inputs via `Query`, `Res`, `ResMut`).
