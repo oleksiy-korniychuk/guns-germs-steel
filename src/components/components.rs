@@ -93,6 +93,9 @@ pub struct PopulationText;
 pub struct BandCenterMarker;
 
 #[derive(Component)]
+pub struct BandCircleMarker;
+
+#[derive(Component)]
 pub struct PathVisualizationEnabled;
 
 #[derive(Component, Debug)]

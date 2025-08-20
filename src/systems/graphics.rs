@@ -153,26 +153,46 @@ pub fn band_center_visualization_system(
     mut commands: Commands,
     band_center: Res<BandCenter>,
     viz_enabled: Res<BandCenterVisualizationEnabled>,
-    existing_markers: Query<Entity, With<BandCenterMarker>>,
+    existing_center_markers: Query<Entity, With<BandCenterMarker>>,
+    existing_circle_markers: Query<Entity, With<BandCircleMarker>>,
 ) {
     // Clean up existing band center markers
-    for marker_entity in existing_markers.iter() {
+    for marker_entity in existing_center_markers.iter() {
         commands.entity(marker_entity).despawn();
     }
     
-    // If visualization is enabled, spawn a new marker at the current band center
+    // Clean up existing band circle markers
+    for marker_entity in existing_circle_markers.iter() {
+        commands.entity(marker_entity).despawn();
+    }
+    
+    // If visualization is enabled, spawn new markers at the current band center
     if viz_enabled.0 {
         let world_x = (band_center.0.x as f32 - GRID_WIDTH as f32 / 2.0) * TILE_SIZE;
         let world_y = (band_center.0.y as f32 - GRID_HEIGHT as f32 / 2.0) * TILE_SIZE;
+        let center_world_pos = Vec3::new(world_x + TILE_SIZE/2.0, world_y + TILE_SIZE/2.0, 4.0);
         
+        // Spawn the red center dot
         commands.spawn((
             Sprite {
                 color: Color::srgb(1.0, 0.0, 0.0), // Red color
                 custom_size: Some(Vec2::new(TILE_SIZE / 3.0, TILE_SIZE / 3.0)), // About a third of tile size
                 ..default()
             },
-            Transform::from_xyz(world_x + TILE_SIZE/2.0, world_y + TILE_SIZE/2.0, 4.0), // High Z-index to be on top
+            Transform::from_translation(center_world_pos),
             BandCenterMarker,
+        ));
+        
+        // Spawn the cyan circle outline
+        let circle_radius = BAND_RADIUS as f32 * TILE_SIZE; // Convert grid units to world units
+        commands.spawn((
+            Sprite {
+                color: Color::srgba(0.0, 1.0, 1.0, 0.3), // Cyan with transparency
+                custom_size: Some(Vec2::new(circle_radius * 2.0, circle_radius * 2.0)),
+                ..default()
+            },
+            Transform::from_translation(Vec3::new(center_world_pos.x, center_world_pos.y, 3.0)), // Lower Z-index so it's behind the dot
+            BandCircleMarker,
         ));
     }
 }
