@@ -21,16 +21,16 @@ pub const WHEAT_SCALE: f64 = 0.07; // Controls wheat patch size - smaller = larg
 pub const WHEAT_THRESHOLD: f32 = 0.7; // Noise value above which wheat spawns
 
 // --- Creature Constants ---
-pub const MOVE_COST: i32 = 2;
-pub const LIVE_COST: i32 = 1;
+pub const MOVE_COST: i32 = 300;
+pub const LIVE_COST: i32 = 70;
 pub const WORK_COST: i32 = 20;
-pub const PREGNANT_COST: i32 = 1000;
-pub const HUMAN_MAX_CALORIES: i32 = 2500;
-pub const HUMAN_PREGNANCY_DURATION: u32 = 75;
+pub const PREGNANT_COST: i32 = 10000;
+pub const HUMAN_MAX_CALORIES: i32 = 25000;
+pub const HUMAN_PREGNANCY_DURATION: u32 = 200;
 pub const BAND_RADIUS: i32 = 10;
 
 // --- Plant Constants ---
-pub const WHEAT_NUTRIENTS: i32 = 1000;
+pub const WHEAT_NUTRIENTS: i32 = 5000;
 
 
 // --- Visual Constants ---

@@ -78,6 +78,11 @@ pub struct Edible;
 #[derive(Component)]
 pub struct Harvestable;
 
+#[derive(Component, Debug)]
+pub struct BeingConsumed {
+    pub consumer_entity: Entity,
+}
+
 #[derive(Component)]
 pub struct TickText;
 
@@ -99,4 +104,10 @@ pub struct PathMarker {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PlantType {
     Wheat
+}
+
+// --- Events ---
+#[derive(Event, Debug)]
+pub struct FoodTargetInvalidated {
+    pub creature_entity: Entity,
 }

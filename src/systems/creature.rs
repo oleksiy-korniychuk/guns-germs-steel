@@ -69,22 +69,24 @@ pub fn perform_eat_system(
     mut commands: Commands,
     mut creature_query: Query<(Entity, &Position, &mut Calories, &mut ActionEat), (With<CreatureMarker>, Without<ActivePath>)>,
     plant_query: Query<(&Position, &FoodSource), (With<PlantMarker>, With<Harvestable>, With<Edible>, Without<CreatureMarker>)>,
+    being_consumed_query: Query<&BeingConsumed, With<PlantMarker>>,
 ) {
-    let mut plants_being_eaten = HashSet::new();
-    
     for (creature_entity, creature_pos, mut creature_calories, mut eat_action) in creature_query.iter_mut() {
         if let Ok((plant_pos, plant_food)) = plant_query.get(eat_action.target_entity) {
             if *creature_pos == *plant_pos {
-                // Check if another creature is already eating this plant this tick
-                if plants_being_eaten.contains(&eat_action.target_entity) {
-                    // Collision detected, reset this creature's intent
-                    commands.entity(creature_entity)
-                        .remove::<ActionEat>();
-                    continue;
+                // Check if another creature is already consuming this plant
+                if let Ok(being_consumed) = being_consumed_query.get(eat_action.target_entity) {
+                    if being_consumed.consumer_entity != creature_entity {
+                        // Another creature is already consuming this plant
+                        commands.entity(creature_entity)
+                            .remove::<ActionEat>();
+                        continue;
+                    }
+                } else {
+                    // Plant isn't being consumed yet, mark it as being consumed by this creature
+                    commands.entity(eat_action.target_entity)
+                        .insert(BeingConsumed { consumer_entity: creature_entity });
                 }
-                
-                // Mark this plant as being eaten this tick
-                plants_being_eaten.insert(eat_action.target_entity);
                 
                 eat_action.progress += 1;
                 creature_calories.current -= WORK_COST;
@@ -100,6 +102,37 @@ pub fn perform_eat_system(
             commands.entity(creature_entity)
                 .remove::<ActionEat>();
         }
+    }
+}
+
+pub fn food_target_notification_system(
+    mut invalidated_events: EventWriter<FoodTargetInvalidated>,
+    newly_consumed_query: Query<(Entity, &BeingConsumed), (With<PlantMarker>, Added<BeingConsumed>)>,
+    creature_query: Query<(Entity, &ActionEat), With<CreatureMarker>>,
+) {
+    for (plant_entity, being_consumed) in newly_consumed_query.iter() {
+        // Find all creatures targeting this plant (except the one consuming it)
+        for (creature_entity, action_eat) in creature_query.iter() {
+            if action_eat.target_entity == plant_entity && creature_entity != being_consumed.consumer_entity {
+                invalidated_events.write(FoodTargetInvalidated {
+                    creature_entity,
+                });
+            }
+        }
+    }
+}
+
+pub fn handle_food_target_invalidated_system(
+    mut commands: Commands,
+    mut invalidated_events: EventReader<FoodTargetInvalidated>,
+) {
+    for event in invalidated_events.read() {
+        // Reset creature to search for new food
+        commands.entity(event.creature_entity)
+            .remove::<ActionEat>()
+            .remove::<ActionTravelTo>()
+            .remove::<ActivePath>()
+            .insert(WantsToEat);
     }
 }
 
@@ -122,12 +155,13 @@ pub fn find_food_system(
     creature_query: Query<(Entity, &Position), (With<CreatureMarker>, With<WantsToEat>)>,
     food_query: Query<(), (With<PlantMarker>, With<Harvestable>, With<Edible>)>,
     food_pos_query: Query<&Position, (With<PlantMarker>, With<Harvestable>, With<Edible>)>,
+    being_consumed_query: Query<(), (With<PlantMarker>, With<BeingConsumed>)>,
     spatial_grid: Res<SpatialGrid>,
 ) {
     let mut targeted_plants = HashSet::new();
     
     for (creature_entity, creature_pos) in creature_query.iter() {
-        if let Some(food_entity) = find_closest_available_food(&spatial_grid, &food_query, *creature_pos, &targeted_plants) {
+        if let Some(food_entity) = find_closest_available_food(&spatial_grid, &food_query, &being_consumed_query, *creature_pos, &targeted_plants) {
             if let Ok(food_pos) = food_pos_query.get(food_entity) {
                 // Mark this plant as targeted
                 targeted_plants.insert(food_entity);
@@ -360,6 +394,7 @@ fn calculate_astar_path(
 fn find_closest_available_food(
     grid: &Res<SpatialGrid>,
     food_query: &Query<(), (With<PlantMarker>, With<Harvestable>, With<Edible>)>,
+    being_consumed_query: &Query<(), (With<PlantMarker>, With<BeingConsumed>)>,
     start_pos: Position,
     targeted_plants: &HashSet<Entity>,
 ) -> Option<Entity> {
@@ -374,7 +409,9 @@ fn find_closest_available_food(
 
                 if let Some(entities_in_cell) = grid.0.get(&check_pos) {
                     for &entity in entities_in_cell {
-                        if food_query.get(entity).is_ok() && !targeted_plants.contains(&entity) {
+                        if food_query.get(entity).is_ok() 
+                            && !targeted_plants.contains(&entity)
+                            && being_consumed_query.get(entity).is_err() {  // Exclude plants being consumed
                             return Some(entity);
                         }
                     }

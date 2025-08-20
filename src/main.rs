@@ -6,6 +6,8 @@ mod systems;
 mod components;
 mod constants;
 
+use components::components::FoodTargetInvalidated;
+
 use resources::{
     game_state::GameState,
     camera::{CameraZoom, CameraPosition},
@@ -38,6 +40,7 @@ fn main() {
         .init_resource::<CameraZoom>()
         .init_resource::<CameraPosition>()
         .init_resource::<BandCenterVisualizationEnabled>()
+        .add_event::<FoodTargetInvalidated>()
         .add_systems(
             Startup, 
             (
@@ -57,6 +60,8 @@ fn main() {
                 return_to_band_system,      // Convert WantsToReturnToBand to ActionTravelTo
                 perform_movement_system,    // Execute movement along ActivePath
                 perform_eat_system,        // Execute eating actions
+                food_target_notification_system, // Notify creatures when their targets become unavailable
+                handle_food_target_invalidated_system, // Handle food target invalidation events
                 procreation_system,        // Execute procreation actions
                 check_if_returned_to_band_system, // Remove OutsideBandRadius if returned to band
                 // Core systems
