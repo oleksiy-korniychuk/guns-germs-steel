@@ -185,6 +185,7 @@ pub fn find_food_system(
 pub fn idle_goal_selection_system(
     mut commands: Commands,
     creature_query: Query<(Entity, &Position, &Calories), (With<CreatureMarker>, With<WantsToIdle>)>,
+    game_grid: Res<GameGrid>,
 ) {
     let mut rng = rand::rng();
     for (entity, pos, calories) in creature_query.iter() {
@@ -192,18 +193,42 @@ pub fn idle_goal_selection_system(
             commands.entity(entity).remove::<WantsToIdle>();
             commands.entity(entity).insert(WantsToEat);
         } else {
-            let mut new_pos = *pos;
-            match rng.random_range(0..5) {
-                0 => new_pos.y = (new_pos.y - 1).max(0),
-                1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
-                2 => new_pos.x = (new_pos.x - 1).max(0),
-                3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
-                _ => {} // Stay put
+            // Try up to 10 times to find a valid non-water destination
+            let mut attempts = 0;
+            let mut found_valid_destination = false;
+            
+            while attempts < 10 && !found_valid_destination {
+                let mut new_pos = *pos;
+                match rng.random_range(0..5) {
+                    0 => new_pos.y = (new_pos.y - 1).max(0),
+                    1 => new_pos.y = (new_pos.y + 1).min(GRID_HEIGHT as i32 - 1),
+                    2 => new_pos.x = (new_pos.x - 1).max(0),
+                    3 => new_pos.x = (new_pos.x + 1).min(GRID_WIDTH as i32 - 1),
+                    _ => {} // Stay put - always valid
+                }
+                
+                // Check if the destination is water (if it's not the same position)
+                if new_pos == *pos {
+                    // Staying put is always valid
+                    found_valid_destination = true;
+                } else {
+                    let tile = &game_grid.tiles[new_pos.y as usize][new_pos.x as usize];
+                    if tile.kind != TileKind::Water {
+                        // Non-water tile found, use it
+                        commands.entity(entity)
+                            .remove::<WantsToIdle>()
+                            .insert(ActionTravelTo { destination: new_pos });
+                        found_valid_destination = true;
+                    }
+                }
+                
+                attempts += 1;
             }
             
-            commands.entity(entity)
-                .remove::<WantsToIdle>()
-                .insert(ActionTravelTo { destination: new_pos });
+            // If no valid destination found after 10 attempts, just stay put
+            if !found_valid_destination {
+                commands.entity(entity).remove::<WantsToIdle>();
+            }
         }
     }
 }
