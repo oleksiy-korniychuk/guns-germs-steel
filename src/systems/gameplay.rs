@@ -5,8 +5,7 @@ use crate::resources::{
     game_grid::{
         SpatialGrid,
     },
-    tick_count::TickCount,
-    population_count::PopulationCount,
+    ui_elements::{TickCount, PopulationCount},
 };
 use crate::constants::*;
 

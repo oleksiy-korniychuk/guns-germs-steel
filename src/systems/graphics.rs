@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use crate::resources::{
-    tick_count::TickCount,
-    population_count::PopulationCount,
+    ui_elements::{TickCount, PopulationCount},
+    band_center::BandCenter,
+    ui_elements::BandCenterVisualizationEnabled,
 };
 use crate::components::components::*;
 use crate::constants::*;
@@ -145,6 +146,34 @@ pub fn cleanup_path_visualization_system(
         if creatures_with_paths.get(path_marker.creature_entity).is_err() {
             commands.entity(marker_entity).despawn();
         }
+    }
+}
+
+pub fn band_center_visualization_system(
+    mut commands: Commands,
+    band_center: Res<BandCenter>,
+    viz_enabled: Res<BandCenterVisualizationEnabled>,
+    existing_markers: Query<Entity, With<BandCenterMarker>>,
+) {
+    // Clean up existing band center markers
+    for marker_entity in existing_markers.iter() {
+        commands.entity(marker_entity).despawn();
+    }
+    
+    // If visualization is enabled, spawn a new marker at the current band center
+    if viz_enabled.0 {
+        let world_x = (band_center.0.x as f32 - GRID_WIDTH as f32 / 2.0) * TILE_SIZE;
+        let world_y = (band_center.0.y as f32 - GRID_HEIGHT as f32 / 2.0) * TILE_SIZE;
+        
+        commands.spawn((
+            Sprite {
+                color: Color::srgb(1.0, 0.0, 0.0), // Red color
+                custom_size: Some(Vec2::new(TILE_SIZE / 3.0, TILE_SIZE / 3.0)), // About a third of tile size
+                ..default()
+            },
+            Transform::from_xyz(world_x + TILE_SIZE/2.0, world_y + TILE_SIZE/2.0, 4.0), // High Z-index to be on top
+            BandCenterMarker,
+        ));
     }
 }
 

@@ -8,8 +8,8 @@ mod constants;
 
 use resources::{
     game_state::GameState,
-    camera_zoom::CameraZoom,
-    camera_position::CameraPosition,
+    camera::{CameraZoom, CameraPosition},
+    ui_elements::BandCenterVisualizationEnabled,
 };
 use systems::{
     ux::*,
@@ -37,6 +37,7 @@ fn main() {
         .init_state::<GameState>()
         .init_resource::<CameraZoom>()
         .init_resource::<CameraPosition>()
+        .init_resource::<BandCenterVisualizationEnabled>()
         .add_systems(
             Startup, 
             (
@@ -74,6 +75,7 @@ fn main() {
                 (
                     toggle_pause_system,
                     exit_on_escape_system,
+                    band_center_toggle_system,
                     camera_zoom_system,
                     camera_pan_system,
                     spawn_creature_visuals_system,
@@ -83,6 +85,7 @@ fn main() {
                     update_population_text_system,
                     path_visualization_system,
                     cleanup_path_visualization_system,
+                    band_center_visualization_system,
                     update_tick_text_system,
                     cursor_click_system.run_if(input_just_pressed(MouseButton::Left))
                 ),

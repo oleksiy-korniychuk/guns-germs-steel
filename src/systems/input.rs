@@ -8,8 +8,8 @@ use bevy::input::mouse::{
 use crate::constants::*;
 use crate::resources::{
     game_grid::SpatialGrid,
-    camera_zoom::CameraZoom,
-    camera_position::CameraPosition,
+    camera::{CameraZoom, CameraPosition},
+    ui_elements::BandCenterVisualizationEnabled,
 };
 use crate::components::components::*;
 
@@ -170,6 +170,16 @@ pub fn camera_pan_system(
     }
 }
 
+
+pub fn band_center_toggle_system(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut viz_enabled: ResMut<BandCenterVisualizationEnabled>,
+) {
+    if keys.just_pressed(KeyCode::KeyB) {
+        viz_enabled.0 = !viz_enabled.0;
+        info!("Band center visualization toggled: {}", viz_enabled.0);
+    }
+}
 
 // --- Helper Functions ---
 

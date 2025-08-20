@@ -12,10 +12,9 @@ use crate::resources::{
         SpatialGrid,
     },
     band_center::BandCenter,
-    tick_count::TickCount,
-    population_count::PopulationCount,
+    ui_elements::{TickCount, PopulationCount},
     seed::WorldSeed,
-    camera_zoom::CameraZoom,
+    camera::CameraZoom,
 };
 use crate::components::components::*;
 
