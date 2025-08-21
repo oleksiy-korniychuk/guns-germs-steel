@@ -416,12 +416,16 @@ fn calculate_astar_path(
     let result = astar(
         &start,
         |p| {
-            // Generate all possible neighbors (4-directional movement)
+            // Generate all possible neighbors (8-directional movement: N, S, E, W, and diagonals)
             let neighbors = vec![
-                Position { x: p.x + 1, y: p.y },
-                Position { x: p.x - 1, y: p.y },
-                Position { x: p.x, y: p.y + 1 },
-                Position { x: p.x, y: p.y - 1 },
+                Position { x: p.x + 1, y: p.y },     // E
+                Position { x: p.x - 1, y: p.y },     // W
+                Position { x: p.x, y: p.y + 1 },     // S
+                Position { x: p.x, y: p.y - 1 },     // N
+                Position { x: p.x + 1, y: p.y + 1 }, // SE
+                Position { x: p.x - 1, y: p.y + 1 }, // SW
+                Position { x: p.x + 1, y: p.y - 1 }, // NE
+                Position { x: p.x - 1, y: p.y - 1 }, // NW
             ];
 
             neighbors.into_iter()
@@ -455,8 +459,8 @@ fn calculate_astar_path(
                 .collect::<Vec<_>>()
         },
         |p| {
-            // Manhattan distance heuristic
-            ((p.x - end.x).abs() + (p.y - end.y).abs()) as u32
+            // Chebyshev distance heuristic for 8-directional grids (admissible when step costs >= 1)
+            (i32::max((p.x - end.x).abs(), (p.y - end.y).abs())) as u32
         },
         |p| *p == end  // Success condition
     );
