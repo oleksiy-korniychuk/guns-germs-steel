@@ -46,6 +46,7 @@ fn main() {
             (
                 setup_system,
                 setup_visualization_system,
+                spawn_ui,
             ).chain(),
         )
         .add_systems(

@@ -58,6 +58,101 @@ pub fn setup_system(mut commands: Commands, camera_zoom: Res<CameraZoom>) {
     commands.insert_resource(WorldSeed(world_seed));
 }
 
+pub fn spawn_ui (
+    mut commands: Commands,
+) {
+    let root = commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+            Name::new("UI Root"),
+        ))
+        .id();
+
+    // --- Top Status Bar ------------------------------------------------------
+    let top_bar = commands
+        .spawn((
+            Node {
+                height: Val::Px(32.0),
+                width: Val::Percent(100.0),
+                //justify_content: JustifyContent::SpaceBetween,
+                align_items: AlignItems::Center,
+                padding: UiRect::axes(Val::Px(8.0), Val::Px(4.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.08, 0.08, 0.10)),
+            Name::new("Top Bar"),
+        ))
+        .id();
+
+    // Left side: current game tick and population
+    commands.entity(top_bar).with_children(|bar| {
+        bar.spawn((
+            Text::new("Tick: 0"),
+            TextFont {
+                font_size: 16.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            TickText,
+            Name::new("TickText"),
+        ));
+        bar.spawn((
+            Text::new(" | "),
+            TextFont {
+                font_size: 16.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            Name::new("Separator"),
+        ));
+        bar.spawn((
+            Text::new("Population: 2"),
+            TextFont {
+                font_size: 16.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            PopulationText,
+            Name::new("PopulationText"),
+        ));
+    });
+
+    // --- Main Row (left panel + viewport spacer) -----------------------------
+    let main_row = commands
+        .spawn((
+            Node {
+                flex_grow: 1.0,
+                width: Val::Percent(100.0),
+                flex_direction: FlexDirection::Row,
+                ..default()
+            },
+            Name::new("Main Row"),
+        ))
+        .id();
+
+    // Spacer for your game viewport (UI doesn't render here)
+    let viewport_spacer = commands
+        .spawn((
+            Node {
+                flex_grow: 1.0,
+                ..default()
+            },
+            Name::new("Viewport Spacer"),
+        ))
+        .id();
+
+    // Build hierarchy
+    commands.entity(root).add_children(&[top_bar, main_row]);
+    commands
+        .entity(main_row)
+        .add_children(&[viewport_spacer]);
+}
+
 pub fn setup_visualization_system(
     mut commands: Commands,
     grid: Res<GameGrid>,
@@ -101,27 +196,6 @@ pub fn setup_visualization_system(
         }
     }
     
-    // --- Draw the UI/UX Elements ---
-    commands.spawn((
-        TickText,
-        Text::new("Tick: 0"),
-        Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(10.0),
-            left: Val::Px(10.0),
-            ..default()
-        },
-    ));
-    commands.spawn((
-        PopulationText,
-        Text::new("Population: 0"),
-        Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(30.0),
-            left: Val::Px(10.0),
-            ..default()
-        },
-    ));
     info!("World seed: {}", world_seed.0);
 }
 
