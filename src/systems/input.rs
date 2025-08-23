@@ -9,7 +9,7 @@ use crate::constants::*;
 use crate::resources::{
     game_grid::SpatialGrid,
     camera::{CameraZoom, CameraPosition},
-    ui_elements::BandCenterVisualizationEnabled,
+    ui_elements::{BandCenterVisualizationEnabled, LeftPanelState},
     band_center::{BandCenter, BandCenterMode},
 };
 use crate::components::components::*;
@@ -22,10 +22,12 @@ pub fn cursor_click_system(
     mouse_input: Res<ButtonInput<MouseButton>>,
     creature_query: Query<(Entity, &Position, &Calories), With<CreatureMarker>>,
     plant_query: Query<(&Position, &FoodSource, &PlantMarker)>,
-    path_viz_query: Query<(), With<PathVisualizationEnabled>>,
     grid: Res<SpatialGrid>,
     mut band_center: ResMut<BandCenter>,
     mut band_center_mode: ResMut<BandCenterMode>,
+    mut panel_state: ResMut<LeftPanelState>,
+    // Ensure only one creature has path visualization at a time
+    creatures_with_viz: Query<Entity, (With<CreatureMarker>, With<PathVisualizationEnabled>)>,
 ) {
     // Only handle left mouse button clicks
     if !mouse_input.just_pressed(MouseButton::Left) {
@@ -48,17 +50,18 @@ pub fn cursor_click_system(
                     if let Ok((creature_entity, position, calories)) = creature_query.get(*entity) {
                         clicked_creature = true;
                         info!("Clicked creature - Entity: {:?}, Position: {:?}, Calories: {:?}", creature_entity, position, calories);
-                        
-                        // Toggle path visualization for this creature
-                        if path_viz_query.get(creature_entity).is_ok() {
-                            // Remove path visualization
-                            commands.entity(creature_entity).remove::<PathVisualizationEnabled>();
-                            info!("Disabled path visualization for creature {:?}", creature_entity);
-                        } else {
-                            // Add path visualization
-                            commands.entity(creature_entity).insert(PathVisualizationEnabled);
-                            info!("Enabled path visualization for creature {:?}", creature_entity);
+
+                        // Select creature and ensure exclusive path visualization
+                        // Remove viz from any previously visualized creatures
+                        for other in creatures_with_viz.iter() {
+                            if other != creature_entity {
+                                commands.entity(other).remove::<PathVisualizationEnabled>();
+                            }
                         }
+
+                        *panel_state = LeftPanelState::Creature(creature_entity);
+                        commands.entity(creature_entity).insert(PathVisualizationEnabled);
+                        info!("Selected creature {:?}", creature_entity);
                     }
                     
                     // Still log plant info for debugging
@@ -70,9 +73,27 @@ pub fn cursor_click_system(
             
             // If we didn't click on a creature, set band center to manual mode at this position
             if !clicked_creature {
+                *panel_state = LeftPanelState::None;
                 *band_center_mode = BandCenterMode::Manual(position);
                 band_center.0 = position;
                 info!("Set band center to manual mode at position: {:?}", position);
+            }
+        }
+    }
+}
+
+pub fn clear_selection_on_escape_system(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut panel_state: ResMut<LeftPanelState>,
+    mut creatures_with_viz: Query<(Entity, &mut PathVisualizationEnabled), With<CreatureMarker>>,
+    mut commands: Commands,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        if let LeftPanelState::Creature(entity) = *panel_state {
+            *panel_state = LeftPanelState::None;
+            // Remove visualization from the previously selected creature
+            if creatures_with_viz.get_mut(entity).is_ok() {
+                commands.entity(entity).remove::<PathVisualizationEnabled>();
             }
         }
     }

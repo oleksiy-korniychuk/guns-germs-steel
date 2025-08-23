@@ -11,7 +11,7 @@ use components::components::FoodTargetInvalidated;
 use resources::{
     game_state::GameState,
     camera::{CameraZoom, CameraPosition},
-    ui_elements::BandCenterVisualizationEnabled,
+    ui_elements::{BandCenterVisualizationEnabled, LeftPanelState},
 };
 use systems::{
     ux::*,
@@ -40,6 +40,7 @@ fn main() {
         .init_resource::<CameraZoom>()
         .init_resource::<CameraPosition>()
         .init_resource::<BandCenterVisualizationEnabled>()
+        .init_resource::<LeftPanelState>()
         .add_event::<FoodTargetInvalidated>()
         .add_systems(
             Startup, 
@@ -81,7 +82,6 @@ fn main() {
                 spatial_grid_system,
                 (
                     toggle_pause_system,
-                    exit_on_escape_system,
                     band_center_toggle_system,
                     camera_zoom_system,
                     camera_pan_system,
@@ -90,11 +90,13 @@ fn main() {
                     update_creature_color_system,
                     update_creature_position_visuals_system,
                     update_population_text_system,
+                    update_selected_panel_system,
                     path_visualization_system,
                     cleanup_path_visualization_system,
                     band_center_visualization_system,
                     update_tick_text_system,
-                    cursor_click_system.run_if(input_just_pressed(MouseButton::Left))
+                    cursor_click_system.run_if(input_just_pressed(MouseButton::Left)),
+                    clear_selection_on_escape_system,
                 ),
             ).chain(),
         )

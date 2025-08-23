@@ -135,6 +135,54 @@ pub fn spawn_ui (
         ))
         .id();
 
+    // Left info panel (initially hidden)
+    let left_panel = commands
+        .spawn((
+            Node {
+                width: Val::Px(260.0),
+                height: Val::Percent(100.0),
+                display: Display::None,
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(Val::Px(8.0)),
+                row_gap: Val::Px(6.0),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.06, 0.06, 0.08)),
+            SelectedPanelRoot,
+            Name::new("Selected Panel"),
+        ))
+        .id();
+
+    commands.entity(left_panel).with_children(|panel| {
+        panel.spawn((
+            Text::new("Selected Creature"),
+            TextFont { font_size: 18.0, ..default() },
+            TextColor(Color::WHITE),
+            Name::new("SelectedTitle"),
+        ));
+        panel.spawn((
+            Text::new("Entity: -"),
+            TextFont { font_size: 14.0, ..default() },
+            TextColor(Color::WHITE),
+            SelectedEntityIdText,
+            Name::new("SelectedEntityIdText"),
+        ));
+        panel.spawn((
+            Text::new("Calories: -/-"),
+            TextFont { font_size: 14.0, ..default() },
+            TextColor(Color::WHITE),
+            SelectedCaloriesText,
+            Name::new("SelectedCaloriesText"),
+        ));
+        panel.spawn((
+            Text::new("Pregnancy: no"),
+            TextFont { font_size: 14.0, ..default() },
+            TextColor(Color::WHITE),
+            SelectedPregnancyText,
+            Name::new("SelectedPregnancyText"),
+        ));
+    });
+
     // Spacer for your game viewport (UI doesn't render here)
     let viewport_spacer = commands
         .spawn((
@@ -150,7 +198,7 @@ pub fn spawn_ui (
     commands.entity(root).add_children(&[top_bar, main_row]);
     commands
         .entity(main_row)
-        .add_children(&[viewport_spacer]);
+        .add_children(&[left_panel, viewport_spacer]);
 }
 
 pub fn setup_visualization_system(

@@ -68,7 +68,6 @@ flowchart TD
       direction TB
       U1[spatial_grid_system]
       U2[toggle_pause_system]
-      U3[exit_on_escape_system]
       U4[camera_zoom_system]
       U5[camera_pan_system]
       U6[spawn_creature_visuals_system]
@@ -80,7 +79,7 @@ flowchart TD
       U12[update_population_text_system]
       U13[update_tick_text_system]
       U14["cursor_click_system (on LMB)"]
-      U1 --> U2 --> U3 --> U4 --> U5 --> U6 --> U7 --> U8 --> U9 --> U10 --> U11 --> U12 --> U13 --> U14
+      U1 --> U2 --> U4 --> U5 --> U6 --> U7 --> U8 --> U9 --> U10 --> U11 --> U12 --> U13 --> U14
     end
 
     S --> FixedUpdate
@@ -168,7 +167,7 @@ flowchart LR
 - Optional path visualization: toggled per‑creature via click; markers are ephemeral and cleaned up
 
 ### 7) Input & camera
-- Input: Space toggles pause; Escape exits; Left click selects a tile:
+- Input: Space toggles pause; Left click selects a tile:
   - Click on creature: toggles path visualization for that creature
   - Click on empty tile: sets band center to manual mode at that position
   - Manual band mode: creatures will return to the clicked position; automatically switches back to auto-calculated center when all creatures are within band radius

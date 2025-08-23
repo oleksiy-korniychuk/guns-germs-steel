@@ -103,6 +103,19 @@ pub struct PathMarker {
     pub creature_entity: Entity
 }
 
+// --- UI: Selection Panel Markers ---
+#[derive(Component)]
+pub struct SelectedPanelRoot;
+
+#[derive(Component)]
+pub struct SelectedEntityIdText;
+
+#[derive(Component)]
+pub struct SelectedCaloriesText;
+
+#[derive(Component)]
+pub struct SelectedPregnancyText;
+
 // --- Enums ---
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PlantType {

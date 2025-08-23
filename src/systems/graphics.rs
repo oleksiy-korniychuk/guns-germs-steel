@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::resources::{
-    ui_elements::{TickCount, PopulationCount},
+    ui_elements::{TickCount, PopulationCount, LeftPanelState},
     band_center::BandCenter,
     ui_elements::BandCenterVisualizationEnabled,
 };
@@ -217,6 +217,68 @@ pub fn update_population_text_system(
         if let Ok(mut text) = query.single_mut() {
             text.clear();
             text.push_str(&format!("Population: {}", population_count.0));
+        }
+    }
+}
+
+pub fn update_selected_panel_system(
+    panel_state: Res<LeftPanelState>,
+    mut root_query: Query<&mut Node, With<SelectedPanelRoot>>,
+    mut text_nodes: Query<
+        (&mut Text, Option<&SelectedEntityIdText>, Option<&SelectedCaloriesText>, Option<&SelectedPregnancyText>),
+        Without<SelectedPanelRoot>
+    >,
+    creatures: Query<(Entity, Option<&Calories>, Option<&Pregnant>), With<CreatureMarker>>,
+) {
+    if let Ok(mut node) = root_query.single_mut() {
+        node.display = match *panel_state {
+            LeftPanelState::Creature(_) => Display::Flex,
+            LeftPanelState::None => Display::None,
+        };
+    }
+
+    let mut entity_line: Option<String> = None;
+    let mut calories_line: Option<String> = None;
+    let mut pregnancy_line: Option<String> = None;
+
+    if let LeftPanelState::Creature(entity) = *panel_state {
+        if let Ok((cre_entity, calories_opt, pregnant_opt)) = creatures.get(entity) {
+            entity_line = Some(format!("Entity: {:?}", cre_entity));
+            if let Some(cal) = calories_opt {
+                calories_line = Some(format!("Calories: {}/{}", cal.current, cal.max));
+            }
+            pregnancy_line = Some(match pregnant_opt {
+                Some(p) => format!("Pregnancy: yes {}/{}", p.progress, p.max_progress),
+                None => "Pregnancy: no".to_string(),
+            });
+        } else {
+            // Selected entity no longer exists; hide panel
+            entity_line = None;
+            calories_line = None;
+            pregnancy_line = None;
+        }
+    }
+
+    for (mut text, is_id, is_cal, is_preg) in text_nodes.iter_mut() {
+        if is_id.is_some() {
+            let new_value = entity_line.as_deref().unwrap_or("Entity: -");
+            // Avoid unnecessary text mutations
+            if text.0 != new_value {
+                text.clear();
+                text.push_str(new_value);
+            }
+        } else if is_cal.is_some() {
+            let new_value = calories_line.as_deref().unwrap_or("Calories: -/-");
+            if text.0 != new_value {
+                text.clear();
+                text.push_str(new_value);
+            }
+        } else if is_preg.is_some() {
+            let new_value = pregnancy_line.as_deref().unwrap_or("Pregnancy: no");
+            if text.0 != new_value {
+                text.clear();
+                text.push_str(new_value);
+            }
         }
     }
 }
